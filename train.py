@@ -90,14 +90,18 @@ def model_pipeline(model, data, loss, optimizer, metrics, epochs=100):
     model.evaluate()
     model.plot_model()
     model.plot_training()
+    model.plot_confusion_matrix()
+    model.plot_roc()
     return model
 
-def main():
+def main(path='DATA/speech_commands_v0.02', batch_size=64, shuffle_buffer_size=1000,
+         name_model='cnn_trad_fpool3', loss='sparse_categorical_crossentropy',
+         optimizer='Adam', metrics='accuracy', epochs=100):
     '''
     Main function.
     '''
-    data = input_pipeline(path='DATA/speech_commands_v0.02', batch_size=batch_size, shuffle_buffer_size=1000)
-    model = model_pipeline(model=name_model, data=data, loss=loss, optimizer=optimizer, metrics=metrics)
+    data = input_pipeline(path=path, batch_size=batch_size, shuffle_buffer_size=shuffle_buffer_size)
+    model = model_pipeline(model=name_model, data=data, loss=loss, optimizer=optimizer, metrics=metrics, epochs=epochs)
 
 if __name__ == '__main__':
 
@@ -130,4 +134,5 @@ if __name__ == '__main__':
     else:
         metrics = args['--metrics']
 
-    main()
+    main(path='DATA/speech_commands_v0.02', batch_size=batch_size, shuffle_buffer_size=1000,
+         name_model=name_model, loss=loss, optimizer=optimizer, metrics=metrics, epochs=epochs)
