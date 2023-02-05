@@ -41,11 +41,12 @@ class DataSource(object):
 
     def print_commands(self):
         '''Prints the commands.'''
-        print('Commands:', self.commands)
+        print('Commands:\n', self.commands)
 
     def get_data(self):
         '''Gets the data.'''
         filenames = tf.io.gfile.glob(str(self.data_dir) + '/*/*')
+        filenames = [filename for filename in filenames if '_background_noise_' not in filename]
         self.filenames = tf.random.shuffle(filenames)
         self.num_samples = len(filenames)
 
@@ -56,11 +57,11 @@ class DataSource(object):
               len(tf.io.gfile.listdir(str(self.data_dir/self.commands[0]))))
         print('Example file tensor:', self.filenames[0])
 
-    def train_test_split(self, train_ratio=.8, test_ratio=.05):
+    def train_test_split(self, train_ratio=.8, val_ratio=.05):
         '''Split the data into training and testing.'''
         self.train_files = self.filenames[:int(train_ratio * self.num_samples)]
-        self.test_files = self.filenames[int(train_ratio * self.num_samples): int(train_ratio * self.num_samples) + int(test_ratio * self.num_samples)]
-        self.val_files = self.filenames[int(train_ratio * self.num_samples) + int(test_ratio * self.num_samples):]
+        self.val_files = self.filenames[int(train_ratio * self.num_samples): int(train_ratio * self.num_samples) + int(val_ratio * self.num_samples)]
+        self.test_files = self.filenames[int(train_ratio * self.num_samples) + int(val_ratio * self.num_samples):]
 
     def print_split(self):
         '''Print the split.'''
@@ -174,7 +175,7 @@ class DataSource(object):
     def batch_ds(self):
         '''Batch the dataset.'''
         train_ds = self.train_ds.batch(self.batch_size)
-        test_ds  = self.test_ds.batch(self.batch_size)
+        val_ds  = self.val_ds.batch(self.batch_size)
 
         self.train_ds = train_ds.cache().prefetch(self.AUTOTUNE)
-        self.test_ds = test_ds.cache().prefetch(self.AUTOTUNE)
+        self.val_ds = val_ds.cache().prefetch(self.AUTOTUNE)

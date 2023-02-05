@@ -3,10 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from tensorflow.keras.layers import Conv2D, MaxPooling2D,\
-                            Flatten, Dense,\
-                            Dropout, BatchNormalization,\
-                            Activation, Input,\
-                            Resizing
+                                    Flatten, Dense,\
+                                    Dropout, BatchNormalization,\
+                                    Activation, Input,\
+                                    Resizing
 
 from model import model
 from low_rank_layer import LowRankDense
@@ -51,7 +51,7 @@ class cnn_trad_fpool3(model):
         x = Dense(units=128, activation='relu')(x)
 
         # Create a final fully connected layer with the number of output classes and a softmax activation function
-        outputs = Dense(units=4, activation='softmax')(x)
+        outputs = Dense(units=self.num_labels, activation='softmax')(x)
 
         # Create a model with the specified inputs and outputs
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
@@ -95,7 +95,7 @@ class cnn_one_fpool3(model):
         x = Dense(units=128, activation='relu')(x)
 
         # Create a final fully connected layer with the number of output classes and a softmax activation function
-        outputs = Dense(units=4, activation='softmax')(x)
+        outputs = Dense(units=self.num_labels, activation='softmax')(x)
 
         # Create a model with the specified inputs and outputs
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
@@ -139,7 +139,7 @@ class cnn_one_fstride4(model):
         x = Dense(units=128, activation='relu')(x)
 
         # Create a final fully connected layer with the number of output classes and a softmax activation function
-        outputs = Dense(units=4, activation='softmax')(x)
+        outputs = Dense(units=self.num_labels, activation='softmax')(x)
 
         # Create a model with the specified inputs and outputs
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
@@ -183,7 +183,7 @@ class cnn_one_fstride8(model):
         x = Dense(units=128, activation='relu')(x)
 
         # Create a final fully connected layer with the number of output classes and a softmax activation function
-        outputs = Dense(units=4, activation='softmax')(x)
+        outputs = Dense(units=self.num_labels, activation='softmax')(x)
 
         # Create a model with the specified inputs and outputs
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
@@ -234,7 +234,7 @@ class cnn_one_tstride2(model):
         x = Dense(units=128, activation='relu')(x)
 
         # Create a final fully connected layer with the number of output classes and a softmax activation function
-        outputs = Dense(units=4, activation='softmax')(x)
+        outputs = Dense(units=self.num_labels, activation='softmax')(x)
 
         # Create a model with the specified inputs and outputs
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
@@ -285,7 +285,7 @@ class cnn_one_tstride4(model):
         x = Dense(units=128, activation='relu')(x)
 
         # Create a final fully connected layer with the number of output classes and a softmax activation function
-        outputs = Dense(units=4, activation='softmax')(x)
+        outputs = Dense(units=self.num_labels, activation='softmax')(x)
 
         # Create a model with the specified inputs and outputs
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
@@ -336,7 +336,7 @@ class cnn_one_tstride8(model):
         x = Dense(units=128, activation='relu')(x)
 
         # Create a final fully connected layer with the number of output classes and a softmax activation function
-        outputs = Dense(units=4, activation='softmax')(x)
+        outputs = Dense(units=self.num_labels, activation='softmax')(x)
 
         # Create a model with the specified inputs and outputs
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
@@ -383,7 +383,7 @@ class cnn_tpool2(model):
         x = Dense(units=128, activation='relu')(x)
 
         # Create a final fully connected layer with the number of output classes and a softmax activation function
-        outputs = Dense(units=4, activation='softmax')(x)
+        outputs = Dense(units=self.num_labels, activation='softmax')(x)
 
         # Create a model with the specified inputs and outputs
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
@@ -430,7 +430,7 @@ class cnn_tpool3(model):
         x = Dense(units=128, activation='relu')(x)
 
         # Create a final fully connected layer with the number of output classes and a softmax activation function
-        outputs = Dense(units=4, activation='softmax')(x)
+        outputs = Dense(units=self.num_labels, activation='softmax')(x)
 
         # Create a model with the specified inputs and outputs
         self.model = tf.keras.Model(inputs=input, outputs=outputs)

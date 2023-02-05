@@ -1,5 +1,7 @@
 '''A module to manage the model.'''
 import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
 
 class model(object):
     '''A class to manage the model.'''
@@ -14,7 +16,7 @@ class model(object):
         for spectrogram, _ in inputs.spectrogram_ds.take(1):
             self.input_shape = spectrogram.shape
         self.num_labels = len(self.inputs.commands)
-        #self.normalization()
+        self.normalization()
 
     def normalization(self):
         self.norm_layer = tf.keras.layers.Normalization()
@@ -35,10 +37,66 @@ class model(object):
         '''Compile the model.'''
         self.model.compile(loss=self.loss, optimizer=self.optimizer, metrics=self.metrics)
 
-    def fit(self, epochs, callbacks, validation_data):
+    def fit(self, epochs, callbacks):
         '''Fit the model.'''
-        self.model.fit(self.inputs, epochs=epochs, callbacks=callbacks, validation_data=validation_data)
+        self.history = self.model.fit(self.inputs.train_ds, epochs=epochs, callbacks=callbacks, validation_data=self.inputs.val_ds)
 
     def evaluate(self):
         '''Evaluate the model.'''
-        self.model.evaluate()
+        self.results = self.model.evaluate(self.inputs.test_ds)
+        print(self.results)
+
+    def predict_test(self):
+        '''Predict the model.'''
+        self.predictions = self.model.predict(self.inputs.test_ds)
+
+    def save(self, path):
+        '''Save the model.'''
+        self.model.save(path)
+
+    def load(self, path):
+        '''Load the model.'''
+        self.model = tf.keras.models.load_model(path)
+
+    def plot_model(self, path):
+        '''Plot the model.'''
+        tf.keras.utils.plot_model(self.model, path, show_shapes=True, show_layer_names=True, expand_nested=True, dpi=96)
+
+    def plot_training(self, path=None):
+        '''Plot the training.'''
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+
+        # Plot accuracy
+        train_acc = self.history.history['accuracy']
+        val_acc = self.history.history['val_accuracy']
+        epochs = range(1, len(train_acc) + 1)
+        ax1.plot(epochs, train_acc, '-o', label='Training Accuracy')
+        ax1.plot(epochs, val_acc, '-o', label='Validation Accuracy')
+        ax1.set_title('Accuracy')
+        ax1.set_xlabel('Epochs')
+        ax1.set_ylabel('Accuracy')
+        ax1.legend()
+
+        y1 = np.array(train_acc)
+        y2 = np.array(val_acc)
+        ax1.fill_between(epochs, y1, y2, where=(y2 > y1), interpolate=True, color='gray', alpha=0.5)
+
+        # Plot loss
+        train_loss = self.history.history['loss']
+        val_loss = self.history.history['val_loss']
+        ax2.plot(epochs, train_loss, '-o', label='Training Loss')
+        ax2.plot(epochs, val_loss, '-o', label='Validation Loss')
+        ax2.set_title('Loss')
+        ax2.set_xlabel('Epochs')
+        ax2.set_ylabel('Loss')
+        ax2.legend()
+
+        y3 = np.array(train_loss)
+        y4 = np.array(val_loss)
+        ax2.fill_between(epochs, y3, y4, where=(y4 > y3), interpolate=True, color='gray', alpha=0.5)
+
+        plt.tight_layout()
+        plt.show()
+
+        if path != None:
+            fig.savefig(path)

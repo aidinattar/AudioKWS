@@ -69,9 +69,27 @@ def model_pipeline(model, data, loss, optimizer, metrics, epochs=100):
     # Get the model.
     model = getattr(models, model)(inputs=data, loss=loss, optimizer=optimizer, metrics=metrics)
     model.define_model()
+    # Print the model parameters.
     model.summary()
+    # Compile the model.
     model.compile()
-    model.fit(epochs=epochs, callbacks=[TensorBoard(log_dir='logs')], validation_data=data.val_ds)
+
+    # Define the callbacks.
+    model_tensorboad_callback = TensorBoard(log_dir="logs/{}".format(name_model))
+    model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+        filepath="checkpoints",
+        save_weights_only=False,
+        monitor='val_accuracy',
+        mode='max',
+        save_best_only=True
+    )
+
+    # Train the model.
+    #model.fit(epochs=epochs, callbacks=[model_tensorboad_callback, model_checkpoint_callback])
+    model.fit(epochs=epochs, callbacks=[model_tensorboad_callback, model_checkpoint_callback])
+    model.evaluate()
+    model.plot_model()
+    model.plot_training()
     return model
 
 def main():
