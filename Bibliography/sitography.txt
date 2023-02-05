@@ -1,0 +1,13 @@
+Google blog
+https://ai.googleblog.com/2017/08/launching-speech-commands-dataset.html
+
+Speech dataset (2.11 GB uncompressed)
+http://download.tensorflow.org/data/speech_commands_v0.02.tar.gz
+
+Experiment with different audio features (+)
+• Type of coefficients (e.g., discrete Wavelet transform)
+• Design of Mel filterbanks, e.g.,
+http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.59.1426&rep=rep1&type=pdf
+
+Example code:
+https://github.com/tensorflow/tensorflow/tree/master/tensorflow/examples/speech_commands/
