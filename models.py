@@ -28,7 +28,10 @@ class dnn_baseline(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer()(x)
+        x = self.norm_layer(x)
+
+        # Flatten the input spectrogram
+        x = Flatten()(x)
 
         # Create a fully connected layer with 128 units and a ReLU activation function
         x = Dense(units=128, activation='relu')(x)
@@ -62,7 +65,7 @@ class cnn_trad_fpool3(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer()(x)
+        x = self.norm_layer(x)
 
         # Create a 2D Convolutional layer with 64 filters and a kernel size of 20x8
         x = Conv2D(filters=64, kernel_size=(20, 8), activation='relu', padding='same')(x)
@@ -109,7 +112,7 @@ class cnn_one_fpool3(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer()(x)
+        x = self.norm_layer(x)
 
         # Create a 2D Convolutional layer with 64 filters and a kernel size of 20x8
         x = Conv2D(filters=54, kernel_size=(32, 8), activation='relu', padding='same')(x)
@@ -153,7 +156,7 @@ class cnn_one_fstride4(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer()(x)
+        x = self.norm_layer(x)
 
         # Create a 2D Convolutional layer with 64 filters and a kernel size of 20x8
         x = Conv2D(filters=186, kernel_size=(32, 8), strides=(1, 4), activation='relu', padding='same')(x)
@@ -197,7 +200,7 @@ class cnn_one_fstride8(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer()(x)
+        x = self.norm_layer(x)
 
         # Create a 2D Convolutional layer with 336 filters and a kernel size of 32x8
         x = Conv2D(filters=336, kernel_size=(32, 8), strides=(1, 8), activation='relu', padding='same')(x)
@@ -241,7 +244,7 @@ class cnn_one_tstride2(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer()(x)
+        x = self.norm_layer(x)
 
         # Create a 2D Convolutional layer with 78 filters and a kernel size of 16x8
         x = Conv2D(filters=78, kernel_size=(16, 8), strides=(2, 1), activation='relu', padding='same')(x)
@@ -292,7 +295,7 @@ class cnn_one_tstride4(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer()(x)
+        x = self.norm_layer(x)
 
         # Create a 2D Convolutional layer with 100 filters and a kernel size of 16x8
         x = Conv2D(filters=100, kernel_size=(16, 8), strides=(4, 1), activation='relu', padding='same')(x)
@@ -343,7 +346,7 @@ class cnn_one_tstride8(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer()(x)
+        x = self.norm_layer(x)
 
         # Create a 2D Convolutional layer with 126 filters and a kernel size of 16x8
         x = Conv2D(filters=126, kernel_size=(16, 8), strides=(8, 1), activation='relu', padding='same')(x)
@@ -394,7 +397,7 @@ class cnn_tpool2(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer()(x)
+        x = self.norm_layer(x)
 
         # Create a 2D Convolutional layer with 94 filters and a kernel size of 21x8
         x = Conv2D(filters=94, kernel_size=(21, 8), activation='relu', padding='same')(x)
@@ -441,7 +444,7 @@ class cnn_tpool3(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer()(x)
+        x = self.norm_layer(x)
 
         # Create a 2D Convolutional layer with 94 filters and a kernel size of 21x8
         x = Conv2D(filters=94, kernel_size=(21, 8), activation='relu', padding='same')(x)
@@ -455,10 +458,10 @@ class cnn_tpool3(model):
         # Create a Max Pooling layer with a pool size of 1x1
         x = MaxPooling2D(pool_size=(1, 1))(x)
 
-        # Create a 2D Convolutional layer with 64 filters and a kernel size of 10x4
+        # Create a flatten layer
         x = Flatten()(x)
 
-        # Create a Low Rank Dense layer with 32 units and a rank of 16
+        # Create a Low Rank Dense layer with 32 units and a rank of 3
         x = LowRankDense(units=32, rank=3)(x)
 
         # Create a fully connected layer with 128 units and a ReLU activation function

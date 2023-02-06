@@ -89,9 +89,10 @@ def model_pipeline(name_model, data, loss, optimizer, metrics, epochs=100):
     model.fit(epochs=epochs, callbacks=[model_tensorboad_callback, model_checkpoint_callback])
     model.evaluate_val()
     model.plot_model('figures/{}.png'.format(name_model))
+    model.save_fit('history/{}.pkl'.format(name_model))
     model.plot_training()
     model.plot_confusion_matrix()
-    model.plot_roc()
+    model.plot_roc_OvR()
     model.save('models/{}.h5'.format(name_model))
     return model
 

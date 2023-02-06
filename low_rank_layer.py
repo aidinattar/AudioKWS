@@ -19,8 +19,8 @@ class LowRankDense(tf.keras.layers.Layer):
         self.rank =  int(rank) if not isinstance(rank, int) else rank
         if self.rank < 0:
             raise ValueError(
-                "Received an invalid value for `units`, expected "
-                f"a positive integer. Received: units={units}"
+                "Received an invalid value for `rank`, expected "
+                f"a positive integer. Received: rank={rank}"
             )
 
     def build(self, input_shape):
