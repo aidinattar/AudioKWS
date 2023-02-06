@@ -3,6 +3,7 @@ Class to define the Low Rank Dense layer, according to:
 https://stats.stackexchange.com/questions/365179/what-is-low-rank-linear-layer-in-neural-networks
 '''
 import tensorflow as tf
+from keras import backend
 
 class LowRankDense(tf.keras.layers.Layer):
     '''Low Rank Dense Layer.'''
@@ -24,23 +25,32 @@ class LowRankDense(tf.keras.layers.Layer):
 
     def build(self, input_shape):
         '''Build the layer.'''
+        dtype = tf.as_dtype(self.dtype or backend.floatx())
+        if not (dtype.is_floating or dtype.is_complex):
+            raise TypeError(
+                "A Dense layer can only be built with a floating-point "
+                f"dtype. Received: dtype={dtype}"
+            )
         input_dim = input_shape[-1]
         self.U = self.add_weight(
             name = 'U',
             shape=(self.units, self.rank),
             initializer='glorot_uniform',
+            dtype=self.dtype,
             trainable=True
         )
         self.V = self.add_weight(
             name = 'V',
             shape=(self.rank, input_dim),
             initializer='glorot_uniform',
+            dtype=self.dtype,
             trainable=True
         )
         self.bias = self.add_weight(
             name = 'bias',
             shape=(self.units,),
             initializer='zeros',
+            dtype=self.dtype,
             trainable=True
         )
         super(LowRankDense, self).build(input_shape)

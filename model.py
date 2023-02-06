@@ -44,14 +44,44 @@ class model(object):
         '''Fit the model.'''
         self.history = self.model.fit(self.inputs.train_ds, epochs=epochs, callbacks=callbacks, validation_data=self.inputs.val_ds)
 
-    def evaluate(self):
-        '''Evaluate the model.'''
-        self.results = self.model.evaluate(self.inputs.test_ds)
-        print(self.results)
+    def evaluate_train(self):
+        '''Evaluate the model on the train set.'''
+        self.results_train = self.model.evaluate(self.inputs.train_ds)
+        print(self.results_train)
+
+    def predict_train(self):
+        '''Predict the model on the train set.'''
+        self.predictions_train = self.model.predict(self.inputs.train_ds)
+
+    def evaluate_val(self):
+        '''Evaluate the model on the validation set.'''
+        self.results_val = self.model.evaluate(self.inputs.val_ds)
+        print(self.results_val)
+
+    def predict_val(self):
+        '''Predict the model on the validation set.'''
+        self.predictions_val = self.model.predict(self.inputs.val_ds)
+
+    def evaluate_test(self):
+        '''Evaluate the model on the test set.'''
+        y_pred, y_true = self.predict_test()
+        test_acc = sum(y_pred == y_true) / len(y_true)
+        print(f'Test set accuracy: {test_acc:.0%}')
 
     def predict_test(self):
-        '''Predict the model.'''
-        self.predictions = self.model.predict(self.inputs.test_ds)
+        '''Predict the model on the test set.'''
+        test_audio = []
+        test_labels = []
+
+        for audio, label in self.inputs.test_ds:
+            test_audio.append(audio.numpy())
+            test_labels.append(label.numpy())
+
+        test_audio = np.array(test_audio)
+        test_labels = np.array(test_labels)
+
+        self.predictions_test = np.argmax(model.predict(test_audio), axis=1)
+        return self.predictions_test, test_labels
 
     def save(self, path):
         '''Save the model.'''
@@ -108,7 +138,7 @@ class model(object):
         '''Plot the confusion matrix.'''
         y_true = []
         y_pred = []
-        for spectrogram, label in self.inputs.test_ds:
+        for spectrogram, label in self.inputs.val_ds:
             y_true.append(label.numpy().argmax())
             y_pred.append(np.argmax(self.model.predict(spectrogram)))
 
@@ -126,7 +156,7 @@ class model(object):
         '''Plot the ROC curve.'''
         y_true = []
         y_pred = []
-        for spectrogram, label in self.inputs.test_ds:
+        for spectrogram, label in self.inputs.val_ds:
             y_true.append(label.numpy().argmax())
             y_pred.append(np.argmax(self.model.predict(spectrogram)))
 

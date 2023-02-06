@@ -10,8 +10,8 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": true,
-            "args": ["cnn_trad_fpool3", "--batch_size=256", "--epochs=15"]
+            "justMyCode": false,
+            "args": ["cnn_trad_fpool3", "--batch_size=256", "--epochs=2"]
         }
     ]
 }

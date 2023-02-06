@@ -61,13 +61,13 @@ def input_pipeline(path='DATA/speech_commands_v0.02', batch_size=64, shuffle_buf
 
     return data_source
 
-def model_pipeline(model, data, loss, optimizer, metrics, epochs=100):
+def model_pipeline(name_model, data, loss, optimizer, metrics, epochs=100):
     '''
     Get the model.
     '''
 
     # Get the model.
-    model = getattr(models, model)(inputs=data, loss=loss, optimizer=optimizer, metrics=metrics)
+    model = getattr(models, name_model)(inputs=data, loss=loss, optimizer=optimizer, metrics=metrics)
     model.define_model()
     # Print the model parameters.
     model.summary()
@@ -87,11 +87,12 @@ def model_pipeline(model, data, loss, optimizer, metrics, epochs=100):
     # Train the model.
     #model.fit(epochs=epochs, callbacks=[model_tensorboad_callback, model_checkpoint_callback])
     model.fit(epochs=epochs, callbacks=[model_tensorboad_callback, model_checkpoint_callback])
-    model.evaluate()
-    model.plot_model()
+    model.evaluate_val()
+    model.plot_model('figures/{}.png'.format(name_model))
     model.plot_training()
     model.plot_confusion_matrix()
     model.plot_roc()
+    model.save('models/{}.h5'.format(name_model))
     return model
 
 def main(path='DATA/speech_commands_v0.02', batch_size=64, shuffle_buffer_size=1000,
@@ -101,7 +102,7 @@ def main(path='DATA/speech_commands_v0.02', batch_size=64, shuffle_buffer_size=1
     Main function.
     '''
     data = input_pipeline(path=path, batch_size=batch_size, shuffle_buffer_size=shuffle_buffer_size)
-    model = model_pipeline(model=name_model, data=data, loss=loss, optimizer=optimizer, metrics=metrics, epochs=epochs)
+    model = model_pipeline(name_model=name_model, data=data, loss=loss, optimizer=optimizer, metrics=metrics, epochs=epochs)
 
 if __name__ == '__main__':
 
