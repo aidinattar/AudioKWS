@@ -9,7 +9,7 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D,\
                                     Resizing
 
 from model import model
-from low_rank_layer import LowRankDense
+from utils.custom_layers import LowRankDense
 
 
 class dnn_baseline(model):

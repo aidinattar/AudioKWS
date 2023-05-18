@@ -5,17 +5,20 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-from utils import flatten, \
-                  plot_roc_curve, get_all_roc_coordinates, \
-                  roc_auc_score, calculate_tpr_fpr
+from utils.custom_layers import flatten
+from utils.metric_eval import plot_roc_curve, get_all_roc_coordinates, \
+                              roc_auc_score, calculate_tpr_fpr
 from sklearn.metrics import roc_curve, auc
 from sklearn.multiclass import OneVsRestClassifier
 
 class model(object):
     '''A class to manage the model.'''
 
-    def __init__(self, inputs, loss, optimizer, metrics):
+    def __init__(self,
+                 inputs:,
+                 loss,
+                 optimizer,
+                 metrics):
         '''Initialize the class.'''
 
         self.inputs = inputs
@@ -24,8 +27,9 @@ class model(object):
         self.metrics = metrics
         for spectrogram, _ in inputs.spectrogram_ds.take(1):
             self.input_shape = spectrogram.shape
-        self.num_labels = len(self.inputs.commands)
+        self.num_classes = len(self.inputs.commands)
         self.normalization()
+    
 
     def normalization(self):
         self.norm_layer = tf.keras.layers.Normalization()
@@ -36,7 +40,7 @@ class model(object):
     def print_input_shape(self):
         '''Print the input shape.'''
         print('Input shape:', self.input_shape)
-        print('Output shape:', self.num_labels)
+        print('Output shape:', self.num_classes)
 
     def summary(self):
         '''Print a summary of the model.'''
@@ -86,7 +90,7 @@ class model(object):
         X_val  = np.zeros(shape=flatten([len_data, list(shape_x[1:])]))
         y_true = np.zeros(shape=(len_data), dtype=np.int32)
         y_pred = np.zeros(shape=(len_data), dtype=np.int32)
-        y_prob = np.zeros(shape=(len_data, self.num_labels), dtype=np.float32)
+        y_prob = np.zeros(shape=(len_data, self.num_classes), dtype=np.float32)
 
         for i, (spectrogram, label) in enumerate(self.inputs.val_ds):
             start = i*batch_size
