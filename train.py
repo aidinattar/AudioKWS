@@ -1,4 +1,4 @@
-'''
+"""
 Train a model on the speech_commands_v0.02 dataset.
 
 This script trains a model on the speech_commands_v0.02 dataset. The dataset
@@ -29,21 +29,21 @@ Options:
 
 Example:
     python train.py cnn_trad_fpool3 --batch_size=64 --epochs=100 --loss=sparse_categorical_crossentropy --optimizer=Adam --metrics=accuracy
-'''
+"""
 
 import pickle
 import models
 import tensorflow as tf
 from tensorflow.keras.callbacks import TensorBoard
 
-from input_data import DataSource
+from DataSource import DataSource
 from docopt import docopt
 
 
 def input_pipeline(path='DATA/speech_commands_v0.02', batch_size=64, shuffle_buffer_size=1000):
-    '''
+    """
     Get the data.
-    '''
+    """
 
     # Get the data.
     data_source = DataSource(path=path, batch_size=batch_size, shuffle_buffer_size=shuffle_buffer_size)
@@ -62,9 +62,9 @@ def input_pipeline(path='DATA/speech_commands_v0.02', batch_size=64, shuffle_buf
     return data_source
 
 def model_pipeline(name_model, data, loss, optimizer, metrics, epochs=100):
-    '''
+    """
     Get the model.
-    '''
+    """
 
     # Get the model.
     model = getattr(models, name_model)(inputs=data, loss=loss, optimizer=optimizer, metrics=metrics)
@@ -99,9 +99,9 @@ def model_pipeline(name_model, data, loss, optimizer, metrics, epochs=100):
 def main(path='DATA/speech_commands_v0.02', batch_size=64, shuffle_buffer_size=1000,
          name_model='cnn_trad_fpool3', loss='sparse_categorical_crossentropy',
          optimizer='Adam', metrics='accuracy', epochs=100):
-    '''
+    """
     Main function.
-    '''
+    """
     data = input_pipeline(path=path, batch_size=batch_size, shuffle_buffer_size=shuffle_buffer_size)
     model = model_pipeline(name_model=name_model, data=data, loss=loss, optimizer=optimizer, metrics=metrics, epochs=epochs)
 

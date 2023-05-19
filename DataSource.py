@@ -1,7 +1,8 @@
-'''
+"""
 Class to manage the data source.
-'''
+"""
 import os
+import copy
 import pathlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,13 +17,13 @@ tf.random.set_seed(seed)
 np.random.seed(seed)
 
 class DataSource(object):
-    '''A class to manage the data source.'''
+    """A class to manage the data source."""
     def __init__(self,
                  path:str,
                  batch_size:int,
                  shuffle_buffer_size:int,
                  verbose:int=0):
-        '''
+        """
         Initialize the class.
         
         Parameters
@@ -33,7 +34,7 @@ class DataSource(object):
             The size of the batch to use.
         shuffle_buffer_size : int
             The size of the shuffle buffer.
-        '''
+        """
         # Set the attributes.
         self.DATASET_PATH = path
         self.batch_size = batch_size
@@ -64,16 +65,16 @@ class DataSource(object):
 
 
     def print_commands(self):
-        '''
+        """
         Prints the commands.
-        '''
+        """
         print('Commands:\n', self.commands)
 
 
     def get_data(self):
-        '''
+        """
         Gets the data from the data directory.
-        '''
+        """
         # Get the filenames.
         filenames = tf.io.gfile.glob(str(self.data_dir) + '/*/*')
         # Remove the background noise files.
@@ -85,9 +86,9 @@ class DataSource(object):
 
 
     def print_example(self):
-        '''
+        """
         Prints the data.
-        '''
+        """
         print('Number of total examples:', self.num_samples)
         print('Number of examples per label:',
               len(tf.io.gfile.listdir(str(self.data_dir/self.commands[0]))))
@@ -95,7 +96,7 @@ class DataSource(object):
 
 
     def train_test_split(self, test_ratio=.8, val_ratio=.05):
-        '''
+        """
         Splits the data into training, testing and validation sets.
         
         Parameters
@@ -104,7 +105,7 @@ class DataSource(object):
             The ratio of the training set.
         val_ratio : float
             The ratio of the validation set. 
-        '''
+        """
         # Get the number of samples for each set.
         N_train = int((1-test_ratio-val_ratio) * self.num_samples)
         N_val = int(val_ratio * self.num_samples)
@@ -133,16 +134,16 @@ class DataSource(object):
 
 
     def print_split(self):
-        '''Print the split.'''
+        """Print the split."""
         print('Training set size', len(self.train_files))
         print('Validation set size', len(self.val_files))
         print('Test set size', len(self.test_files))
 
 
     def get_waveform_ds(self):
-        '''
+        """
         Get waveform dataset.
-        '''
+        """
 
         # Create a dataset of the filenames.
         files_ds = tf.data.Dataset.from_tensor_slices(self.train_files)
@@ -161,7 +162,7 @@ class DataSource(object):
                               savefig:bool=False,
                               dir:str='figures',
                               filename:str=None):
-        '''
+        """
         Plot a grid of waveform examples.
         
         Parameters
@@ -185,7 +186,7 @@ class DataSource(object):
         -------
         fig : matplotlib.figure.Figure
             The figure with the waveform examples.
-        '''
+        """
         # Get the number of examples.
         n = rows * cols
         _, axes = plt.subplots(rows, cols, figsize=(10, 12))
@@ -227,7 +228,7 @@ class DataSource(object):
                         save:bool=False,
                         dir:str='figures',
                         name:str=None):
-        '''
+        """
         Listen to a selected waveform.
         
         Parameters
@@ -251,7 +252,7 @@ class DataSource(object):
         -------
         waveform : numpy.ndarray
             The waveform.
-        '''
+        """
 
         # Get the waveform and label.        
         for waveform, label in self.waveform_ds.skip(n).take(1):
@@ -288,7 +289,7 @@ class DataSource(object):
                    savefig:bool=False,
                    dir:str='figures',
                    name:str=None):
-        '''
+        """
         Plot the spectrogram.
         
         Parameters
@@ -310,7 +311,7 @@ class DataSource(object):
         -------
         fig : matplotlib.figure.Figure
             The figure with the spectrogram.
-        '''
+        """
         # Get the waveform and label.
         for waveform, label in self.waveform_ds.skip(n).take(1):
             label = label.numpy().decode('utf-8')
@@ -346,9 +347,9 @@ class DataSource(object):
 
 
     def get_spectrogram_ds(self):
-        '''
+        """
         Get the spectrogram dataset.
-        '''
+        """
         def get_spectrogram_and_label_id(audio, label):
             spectrogram = get_spectrogram(audio)
             label_id = tf.argmax(label == self.commands)
@@ -358,6 +359,7 @@ class DataSource(object):
             get_spectrogram_and_label_id,
             num_parallel_calls=self.AUTOTUNE)
 
+
     def plot_spectrogram_example(self,
                               rows:int=3,
                               cols:int=3,
@@ -366,7 +368,7 @@ class DataSource(object):
                               savefig:bool=False,
                               dir:str='figures',
                               filename:str=None):
-        '''
+        """
         Plot an example of some spectrogram in a grid.
 
         Parameters
@@ -390,7 +392,7 @@ class DataSource(object):
         -------
         fig : matplotlib.figure.Figure
             The figure with the spectrogram examples.
-        '''
+        """
         # Get the number of examples.
         n = rows * cols
         _, axes = plt.subplots(rows, cols, figsize=(10, 12))
@@ -423,7 +425,7 @@ class DataSource(object):
     def _get_spectrogram_and_label_id(self,
                                       audio,
                                       label):
-        '''
+        """
         Get the spectrogram and label id.
         
         Parameters
@@ -439,7 +441,7 @@ class DataSource(object):
             The spectrogram.
         label_id : numpy.ndarray
             The label id.
-        '''
+        """
         spectrogram = get_spectrogram(audio)
         label_id = tf.argmax(label == self.commands)
         return spectrogram, label_id
@@ -448,7 +450,7 @@ class DataSource(object):
 
     def _preprocess_dataset(self,
                             files):
-        '''
+        """
         Preprocess the dataset.
         
         Parameters
@@ -460,7 +462,7 @@ class DataSource(object):
         -------
         output_ds : tensorflow.python.data.ops.dataset_ops.MapDataset
             The preprocessed dataset.
-        '''
+        """
         files_ds = tf.data.Dataset.from_tensor_slices(files)
         output_ds = files_ds.map(
             map_func=get_waveform_and_label,
@@ -472,18 +474,27 @@ class DataSource(object):
 
 
     def define_ds(self):
-        '''
+        """
         Define the dataset.
-        '''
+        """
         self.train_ds = self.spectrogram_ds
         self.val_ds = self._preprocess_dataset(self.val_files)
         self.test_ds = self._preprocess_dataset(self.test_files)
 
 
     def batch_ds(self):
-        '''Batch the dataset.'''
+        """
+        Batch the dataset.
+        """
         train_ds = self.train_ds.batch(self.batch_size)
         val_ds  = self.val_ds.batch(self.batch_size)
 
         self.train_ds = train_ds.cache().prefetch(self.AUTOTUNE)
         self.val_ds = val_ds.cache().prefetch(self.AUTOTUNE)
+        
+        
+    def copy(self):
+        """
+        Copy the dataset.
+        """
+        return copy.deepcopy(self)

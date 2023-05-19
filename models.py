@@ -13,13 +13,13 @@ from utils.custom_layers import LowRankDense
 
 
 class dnn_baseline(model):
-    '''A class to manage the model cnn-trad-fpool3 described in [Sainath15].'''
+    """A class to manage the model cnn-trad-fpool3 described in [Sainath15]."""
     def init(self, inputs, loss, optimizer, metrics):
-        '''Initialize the class.'''
+        """Initialize the class."""
         super().__init__(inputs, loss, optimizer, metrics)
 
     def define_model(self):
-        '''Define the model.'''
+        """Define the model."""
 
         # Create an input layer with the specified input shape
         input = Input(self.input_shape)
@@ -28,7 +28,7 @@ class dnn_baseline(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer(x)
+        x = self._norm_layer()(x)
 
         # Flatten the input spectrogram
         x = Flatten()(x)
@@ -50,13 +50,13 @@ class dnn_baseline(model):
 
 
 class cnn_trad_fpool3(model):
-    '''A class to manage the model cnn-trad-fpool3 described in [Sainath15].'''
+    """A class to manage the model cnn-trad-fpool3 described in [Sainath15]."""
     def init(self, inputs, loss, optimizer, metrics):
-        '''Initialize the class.'''
+        """Initialize the class."""
         super().__init__(inputs, loss, optimizer, metrics)
 
     def define_model(self):
-        '''Define the model.'''
+        """Define the model."""
 
         # Create an input layer with the specified input shape
         input = Input(self.input_shape)
@@ -65,7 +65,7 @@ class cnn_trad_fpool3(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer(x)
+        x = self._norm_layer()(x)
 
         # Create a 2D Convolutional layer with 64 filters and a kernel size of 20x8
         x = Conv2D(filters=64, kernel_size=(20, 8), activation='relu', padding='same')(x)
@@ -97,13 +97,13 @@ class cnn_trad_fpool3(model):
 
 
 class cnn_one_fpool3(model):
-    '''A class to manage the model cnn-one-fpool3 described in [Sainath15].'''
+    """A class to manage the model cnn-one-fpool3 described in [Sainath15]."""
     def init(self, inputs, loss, optimizer, metrics):
-        '''Initialize the class.'''
+        """Initialize the class."""
         super().__init__(inputs, loss, optimizer, metrics)
 
     def define_model(self):
-        '''Define the model.'''
+        """Define the model."""
 
         # Create an input layer with the specified input shape
         input = Input(self.input_shape)
@@ -112,7 +112,7 @@ class cnn_one_fpool3(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer(x)
+        x = self._norm_layer()(x)
 
         # Create a 2D Convolutional layer with 64 filters and a kernel size of 20x8
         x = Conv2D(filters=54, kernel_size=(32, 8), activation='relu', padding='same')(x)
@@ -141,13 +141,13 @@ class cnn_one_fpool3(model):
 
 
 class cnn_one_fstride4(model):
-    '''A class to manage the model cnn-one-fstride4 described in [Sainath15].'''
+    """A class to manage the model cnn-one-fstride4 described in [Sainath15]."""
     def init(self, inputs, loss, optimizer, metrics):
-        '''Initialize the class.'''
+        """Initialize the class."""
         super().__init__(inputs, loss, optimizer, metrics)
 
     def define_model(self):
-        '''Define the model.'''
+        """Define the model."""
 
         # Create an input layer with the specified input shape
         input = Input(self.input_shape)
@@ -156,7 +156,7 @@ class cnn_one_fstride4(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer(x)
+        x = self._norm_layer()(x)
 
         # Create a 2D Convolutional layer with 64 filters and a kernel size of 20x8
         x = Conv2D(filters=186, kernel_size=(32, 8), strides=(1, 4), activation='relu', padding='same')(x)
@@ -185,13 +185,13 @@ class cnn_one_fstride4(model):
 
 
 class cnn_one_fstride8(model):
-    '''A class to manage the model cnn-one-fstride4 described in [Sainath15].'''
+    """A class to manage the model cnn-one-fstride4 described in [Sainath15]."""
     def init(self, inputs, loss, optimizer, metrics):
-        '''Initialize the class.'''
+        """Initialize the class."""
         super().__init__(inputs, loss, optimizer, metrics)
 
     def define_model(self):
-        '''Define the model.'''
+        """Define the model."""
 
         # Create an input layer with the specified input shape
         input = Input(self.input_shape)
@@ -200,7 +200,7 @@ class cnn_one_fstride8(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer(x)
+        x = self._norm_layer()(x)
 
         # Create a 2D Convolutional layer with 336 filters and a kernel size of 32x8
         x = Conv2D(filters=336, kernel_size=(32, 8), strides=(1, 8), activation='relu', padding='same')(x)
@@ -229,13 +229,13 @@ class cnn_one_fstride8(model):
 
 
 class cnn_one_tstride2(model):
-    '''A class to manage the model cnn-one-tstride2 described in [Sainath15].'''
+    """A class to manage the model cnn-one-tstride2 described in [Sainath15]."""
     def init(self, inputs, loss, optimizer, metrics):
-        '''Initialize the class.'''
+        """Initialize the class."""
         super().__init__(inputs, loss, optimizer, metrics)
 
     def define_model(self):
-        '''Define the model.'''
+        """Define the model."""
 
         # Create an input layer with the specified input shape
         input = Input(self.input_shape)
@@ -244,7 +244,7 @@ class cnn_one_tstride2(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer(x)
+        x = self._norm_layer()(x)
 
         # Create a 2D Convolutional layer with 78 filters and a kernel size of 16x8
         x = Conv2D(filters=78, kernel_size=(16, 8), strides=(2, 1), activation='relu', padding='same')(x)
@@ -280,13 +280,13 @@ class cnn_one_tstride2(model):
 
 
 class cnn_one_tstride4(model):
-    '''A class to manage the model cnn-one-tstride4 described in [Sainath15].'''
+    """A class to manage the model cnn-one-tstride4 described in [Sainath15]."""
     def init(self, inputs, loss, optimizer, metrics):
-        '''Initialize the class.'''
+        """Initialize the class."""
         super().__init__(inputs, loss, optimizer, metrics)
 
     def define_model(self):
-        '''Define the model.'''
+        """Define the model."""
 
         # Create an input layer with the specified input shape
         input = Input(self.input_shape)
@@ -295,7 +295,7 @@ class cnn_one_tstride4(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer(x)
+        x = self._norm_layer()(x)
 
         # Create a 2D Convolutional layer with 100 filters and a kernel size of 16x8
         x = Conv2D(filters=100, kernel_size=(16, 8), strides=(4, 1), activation='relu', padding='same')(x)
@@ -331,13 +331,13 @@ class cnn_one_tstride4(model):
 
 
 class cnn_one_tstride8(model):
-    '''A class to manage the model cnn-one-tstride8 described in [Sainath15].'''
+    """A class to manage the model cnn-one-tstride8 described in [Sainath15]."""
     def init(self, inputs, loss, optimizer, metrics):
-        '''Initialize the class.'''
+        """Initialize the class."""
         super().__init__(inputs, loss, optimizer, metrics)
 
     def define_model(self):
-        '''Define the model.'''
+        """Define the model."""
 
         # Create an input layer with the specified input shape
         input = Input(self.input_shape)
@@ -346,7 +346,7 @@ class cnn_one_tstride8(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer(x)
+        x = self._norm_layer()(x)
 
         # Create a 2D Convolutional layer with 126 filters and a kernel size of 16x8
         x = Conv2D(filters=126, kernel_size=(16, 8), strides=(8, 1), activation='relu', padding='same')(x)
@@ -382,13 +382,13 @@ class cnn_one_tstride8(model):
 
 
 class cnn_tpool2(model):
-    '''A class to manage the model cnn-tpool3 described in [Sainath15].'''
+    """A class to manage the model cnn-tpool3 described in [Sainath15]."""
     def init(self, inputs, loss, optimizer, metrics):
-        '''Initialize the class.'''
+        """Initialize the class."""
         super().__init__(inputs, loss, optimizer, metrics)
 
     def define_model(self):
-        '''Define the model.'''
+        """Define the model."""
 
         # Create an input layer with the specified input shape
         input = Input(self.input_shape)
@@ -397,7 +397,7 @@ class cnn_tpool2(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer(x)
+        x = self._norm_layer()(x)
 
         # Create a 2D Convolutional layer with 94 filters and a kernel size of 21x8
         x = Conv2D(filters=94, kernel_size=(21, 8), activation='relu', padding='same')(x)
@@ -429,13 +429,13 @@ class cnn_tpool2(model):
 
 
 class cnn_tpool3(model):
-    '''A class to manage the model cnn-tpool3 described in [Sainath15].'''
+    """A class to manage the model cnn-tpool3 described in [Sainath15]."""
     def init(self, inputs, loss, optimizer, metrics):
-        '''Initialize the class.'''
+        """Initialize the class."""
         super().__init__(inputs, loss, optimizer, metrics)
 
     def define_model(self):
-        '''Define the model.'''
+        """Define the model."""
 
         # Create an input layer with the specified input shape
         input = Input(self.input_shape)
@@ -444,7 +444,7 @@ class cnn_tpool3(model):
         x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
-        x = self.norm_layer(x)
+        x = self._norm_layer()(x)
 
         # Create a 2D Convolutional layer with 94 filters and a kernel size of 21x8
         x = Conv2D(filters=94, kernel_size=(21, 8), activation='relu', padding='same')(x)
