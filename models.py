@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-
+from DataSource import DataSource
 from tensorflow.keras.layers import Conv2D, MaxPooling2D,\
                                     Flatten, Dense,\
                                     Dropout, BatchNormalization,\
@@ -13,10 +13,22 @@ from utils.custom_layers import LowRankDense
 
 
 class dnn_baseline(model):
-    """A class to manage the model cnn-trad-fpool3 described in [Sainath15]."""
-    def init(self, inputs, loss, optimizer, metrics):
-        """Initialize the class."""
-        super().__init__(inputs, loss, optimizer, metrics)
+    """
+    A class to manage the model cnn-trad-fpool3 described in [Sainath15].
+    """
+    def init(self,
+             inputs:DataSource):
+        """
+        Initialize the class.
+        
+        Parameters
+        ----------
+        inputs : DataSource
+            Input data.
+        """
+        super().__init__(
+            inputs=inputs,
+        )
 
     def define_model(self):
         """Define the model."""
@@ -51,9 +63,19 @@ class dnn_baseline(model):
 
 class cnn_trad_fpool3(model):
     """A class to manage the model cnn-trad-fpool3 described in [Sainath15]."""
-    def init(self, inputs, loss, optimizer, metrics):
-        """Initialize the class."""
-        super().__init__(inputs, loss, optimizer, metrics)
+    def init(self,
+             inputs:DataSource):
+        """
+        Initialize the class.
+        
+        Parameters
+        ----------
+        inputs : DataSource
+            Input data.
+        """
+        super().__init__(
+            inputs=inputs,
+        )
 
     def define_model(self):
         """Define the model."""
@@ -98,9 +120,19 @@ class cnn_trad_fpool3(model):
 
 class cnn_one_fpool3(model):
     """A class to manage the model cnn-one-fpool3 described in [Sainath15]."""
-    def init(self, inputs, loss, optimizer, metrics):
-        """Initialize the class."""
-        super().__init__(inputs, loss, optimizer, metrics)
+    def init(self,
+             inputs:DataSource):
+        """
+        Initialize the class.
+        
+        Parameters
+        ----------
+        inputs : DataSource
+            Input data.
+        """
+        super().__init__(
+            inputs=inputs,
+        )
 
     def define_model(self):
         """Define the model."""
@@ -142,9 +174,19 @@ class cnn_one_fpool3(model):
 
 class cnn_one_fstride4(model):
     """A class to manage the model cnn-one-fstride4 described in [Sainath15]."""
-    def init(self, inputs, loss, optimizer, metrics):
-        """Initialize the class."""
-        super().__init__(inputs, loss, optimizer, metrics)
+    def init(self,
+             inputs:DataSource):
+        """
+        Initialize the class.
+        
+        Parameters
+        ----------
+        inputs : DataSource
+            Input data.
+        """
+        super().__init__(
+            inputs=inputs,
+        )
 
     def define_model(self):
         """Define the model."""
@@ -186,9 +228,19 @@ class cnn_one_fstride4(model):
 
 class cnn_one_fstride8(model):
     """A class to manage the model cnn-one-fstride4 described in [Sainath15]."""
-    def init(self, inputs, loss, optimizer, metrics):
-        """Initialize the class."""
-        super().__init__(inputs, loss, optimizer, metrics)
+    def init(self,
+             inputs:DataSource):
+        """
+        Initialize the class.
+        
+        Parameters
+        ----------
+        inputs : DataSource
+            Input data.
+        """
+        super().__init__(
+            inputs=inputs,
+        )
 
     def define_model(self):
         """Define the model."""
@@ -230,9 +282,19 @@ class cnn_one_fstride8(model):
 
 class cnn_one_tstride2(model):
     """A class to manage the model cnn-one-tstride2 described in [Sainath15]."""
-    def init(self, inputs, loss, optimizer, metrics):
-        """Initialize the class."""
-        super().__init__(inputs, loss, optimizer, metrics)
+    def init(self,
+             inputs:DataSource):
+        """
+        Initialize the class.
+        
+        Parameters
+        ----------
+        inputs : DataSource
+            Input data.
+        """
+        super().__init__(
+            inputs=inputs,
+        )
 
     def define_model(self):
         """Define the model."""
@@ -281,9 +343,19 @@ class cnn_one_tstride2(model):
 
 class cnn_one_tstride4(model):
     """A class to manage the model cnn-one-tstride4 described in [Sainath15]."""
-    def init(self, inputs, loss, optimizer, metrics):
-        """Initialize the class."""
-        super().__init__(inputs, loss, optimizer, metrics)
+    def init(self,
+             inputs:DataSource):
+        """
+        Initialize the class.
+        
+        Parameters
+        ----------
+        inputs : DataSource
+            Input data.
+        """
+        super().__init__(
+            inputs=inputs,
+        )
 
     def define_model(self):
         """Define the model."""
@@ -332,9 +404,19 @@ class cnn_one_tstride4(model):
 
 class cnn_one_tstride8(model):
     """A class to manage the model cnn-one-tstride8 described in [Sainath15]."""
-    def init(self, inputs, loss, optimizer, metrics):
-        """Initialize the class."""
-        super().__init__(inputs, loss, optimizer, metrics)
+    def init(self,
+             inputs:DataSource):
+        """
+        Initialize the class.
+        
+        Parameters
+        ----------
+        inputs : DataSource
+            Input data.
+        """
+        super().__init__(
+            inputs=inputs,
+        )
 
     def define_model(self):
         """Define the model."""
@@ -383,9 +465,19 @@ class cnn_one_tstride8(model):
 
 class cnn_tpool2(model):
     """A class to manage the model cnn-tpool3 described in [Sainath15]."""
-    def init(self, inputs, loss, optimizer, metrics):
-        """Initialize the class."""
-        super().__init__(inputs, loss, optimizer, metrics)
+    def init(self,
+             inputs:DataSource):
+        """
+        Initialize the class.
+        
+        Parameters
+        ----------
+        inputs : DataSource
+            Input data.
+        """
+        super().__init__(
+            inputs=inputs,
+        )
 
     def define_model(self):
         """Define the model."""
@@ -430,9 +522,19 @@ class cnn_tpool2(model):
 
 class cnn_tpool3(model):
     """A class to manage the model cnn-tpool3 described in [Sainath15]."""
-    def init(self, inputs, loss, optimizer, metrics):
-        """Initialize the class."""
-        super().__init__(inputs, loss, optimizer, metrics)
+    def init(self,
+             inputs:DataSource):
+        """
+        Initialize the class.
+        
+        Parameters
+        ----------
+        inputs : DataSource
+            Input data.
+        """
+        super().__init__(
+            inputs=inputs,
+        )
 
     def define_model(self):
         """Define the model."""
