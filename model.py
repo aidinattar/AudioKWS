@@ -9,11 +9,12 @@ import tensorflow as tf
 from utils.custom_layers import flatten
 from utils.metric_eval import plot_roc_curve, get_all_roc_coordinates, \
                               roc_auc_score, calculate_tpr_fpr
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, precision_recall_curve
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from DataSource import DataSource
 from tensorflow.keras.metrics import Accuracy, Precision, Recall, F1Score, AUC
+from sklearn.preprocessing import label_binarize
 
 class Model(object):
     """A class to manage the model."""
@@ -21,6 +22,9 @@ class Model(object):
     created = False
     compiled = False
     trained = False
+    predicted_train = False
+    predicted_val = False
+    predicted_test = False
 
     def __init__(self,
                  inputs:DataSource):
@@ -222,6 +226,8 @@ class Model(object):
         y_pred = np.zeros(shape = (len_data), dtype = np.int32)
         y_prob = np.zeros(shape = (len_data, self.num_classes), dtype = np.float32)
 
+        last_batch_size = batch_size
+
         for i, (spectrogram, label) in enumerate(ds):
             start = i * batch_size
             end = (i + 1)*batch_size
@@ -241,28 +247,32 @@ class Model(object):
 
         return X[:-(batch_size - last_batch_size)],\
                y_true[:-(batch_size - last_batch_size)],\
-               y_pred[:-(batch_size - last_batch_size)]
+               y_pred[:-(batch_size - last_batch_size)],\
+               y_prob[:-(batch_size - last_batch_size)]
 
     
     def predict_train(self):
         """
         Predict the model on the train set.
         """
-        self.x_train, self.predictions_train, self.probabilities_train=self._predict(self.inputs.train_ds)
+        self.x_train, self.true_train, self.predictions_train, self.probabilities_train=self._predict(self.inputs.train_ds)
+        self.predicted_train = True
 
 
     def predict_val(self):
         """
         Predict the model on the validation set.
         """
-        self.x_val, self.predictions_val, self.probabilities_val=self._predict(self.inputs.val_ds)
+        self.x_val, self.true_val, self.predictions_val, self.probabilities_val=self._predict(self.inputs.val_ds)
+        self.predicted_val = True
         
         
     def predict_test(self):
         """
         Predict the model on the test set.
         """
-        self.x_test, self.predictions_test, self.probabilities_test=self._predict(self.inputs.test_ds)
+        self.x_test, self.true_test, self.predictions_test, self.probabilities_test=self._predict(self.inputs.test_ds)
+        self.predicted_test = True
 
 
     def evaluate_train(self):
@@ -397,7 +407,7 @@ class Model(object):
                           y_pred:np.ndarray,
                           return_cm:bool=True,
                           display:bool=True,
-                          save:bool=False,
+                          save:bool=True,
                           dir:str=None,
                           name:str=None,
                           **kwargs) -> np.ndarray:
@@ -418,7 +428,7 @@ class Model(object):
         confusion_matrix : np.ndarray
             The confusion matrix.
         """
-        confusion_matrix=confusion_matrix(
+        cm=confusion_matrix(
             y_true,
             y_pred,
             **kwargs
@@ -446,7 +456,7 @@ class Model(object):
                 )
                 
         if return_cm:
-            return confusion_matrix
+            return cm
 
 
     def _roc_curve(self,
@@ -498,11 +508,11 @@ class Model(object):
         tpr = dict()
         roc_auc = dict()
         for i in range(self.num_classes):
-            fpr[i], tpr[i], _ = roc_curve(y_binarized[:, i], y_score[:, i])
+            fpr[i], tpr[i], _ = roc_curve(y_binarized[:, i], y_pred_prob[:, i])
             roc_auc[i] = auc(fpr[i], tpr[i])
 
         # Compute micro-average ROC curve and AUC
-        fpr_micro, tpr_micro, _ = roc_curve(y_binarized.ravel(), y_score.ravel())
+        fpr_micro, tpr_micro, _ = roc_curve(y_binarized.ravel(), y_pred_prob.ravel())
         roc_auc_micro = auc(fpr_micro, tpr_micro)
 
         if display or save:
@@ -531,6 +541,163 @@ class Model(object):
                         name
                     )
                 )
+                
+        if return_roc:
+            return fpr, tpr, roc_auc
+
+
+    def _pr_curve(self,
+                  y_pred_prob:np.ndarray,
+                  y_true:np.ndarray,
+                  return_pr:bool=True,
+                  display:bool=True,
+                  save:bool=True,
+                  dir:str=None,
+                  name:str=None,
+                  **kwargs):
+        """
+        Compute the PR curve of the model.
+
+        Parameters
+        ----------
+        y_pred_prob: np.array
+            Predicted label probabilities.
+            Default: None
+        y_true: np.array
+            True labels.
+            Default: None
+        return_pr: bool
+            Whether to return the PR curve or not.
+            Default: True
+        display: bool
+            Whether to display the figure or not.
+            Default: True
+        save: bool
+            Whether to save the figure or not.
+            Default: True
+        dir: str
+            Directory to save the figure.
+            Default: None
+        name: str
+            Name of the figure.
+            Default: None
+        **kwargs:
+            Parameters for the PR curve method.
+            
+        Returns
+        -------
+        precision : np.ndarray
+            Precision values.
+        """
+        if not self.trained:
+            raise ValueError('Model not trained')
+
+        # Binarize the labels
+        y_binarized = label_binarize(y_true, classes=range(self.num_classes))
+        
+        # Compute the PR curve and AUC for each class
+        precision = dict()
+        recall = dict()
+        pr_auc = dict()
+        for i in range(self.num_classes):
+            precision[i], recall[i], _ = precision_recall_curve(y_binarized[:, i], y_pred_prob[:, i])
+            pr_auc[i] = auc(recall[i], precision[i])
+        
+        # Compute micro-average PR curve and AUC
+        precision_micro, recall_micro, _ = precision_recall_curve(y_binarized.ravel(), y_pred_prob.ravel())
+        pr_auc_micro = auc(recall_micro, precision_micro)
+        
+        if display or save:
+            fig, ax = plt.subplots()
+
+            for i in range(self.num_classes):
+                ax.plot(recall[i], precision[i], label='Class {0} (AUC = {1:.2f})'.format(i, pr_auc[i]))
+            ax.plot(recall_micro, precision_micro, label='Micro-average (AUC = {0:.2f})'.format(pr_auc_micro))
+
+            ax.set_xlabel('Recall')
+            ax.set_ylabel('Precision')
+            ax.set_title('PR Curve - Multiclass Classification')
+            ax.legend(loc='lower right')
+            
+            if display:
+                plt.show()
+            
+            if save:
+                if dir is None:
+                    dir='figures'
+                if name is None:
+                    name='pr_curve.png'
+                plt.savefig(
+                    os.path.join(
+                        dir,
+                        name
+                    )
+                )
+                
+        if return_pr:
+            return precision, recall, pr_auc
+        
+        
+    def evaluate(self,
+                 set:str='test',
+                 method:str='roc',
+                 **kwargs):
+        """
+        Evaluate the model, using the specified method,
+        on the specified set.
+        
+        Parameters
+        ----------
+        set : str
+            The set to evaluate on.
+            Possible values: 'train', 'val', 'test'.
+            Default: 'test'
+        method : str
+            The evaluation method.
+            Possible values: 'accuracy', 'precision', 'recall', 'f1', 'roc', 'pr', 'confusion_matrix'.
+            Default: 'roc'
+        **kwargs : dict
+            The arguments to pass to the evaluation method.
+        """
+        assert set in ['train', 'val', 'test'], 'Invalid set'
+        assert method in ['accuracy', 'precision', 'recall', 'f1', 'roc', 'pr', 'confusion_matrix'], 'Invalid method'
+        if not self.trained:
+            raise ValueError('Model not trained')
+        
+        method_dict = {
+            'accuracy': self._accuracy,
+            'precision': self._precision,
+            'recall': self._recall,
+            'f1': self._f1,
+            'roc': self._roc_curve,
+            'pr': self._pr_curve,
+            'confusion_matrix': self._confusion_matrix
+        }
+        
+        if set == 'train':
+            if not self.predicted_train:
+                self.predict_train()
+                
+            x, y_true, y_pred, y_prob = self.x_train, self.true_train, self.predictions_train, self.probabilities_train
+
+        elif set == 'val':
+            if not self.predicted_val:
+                self.predict_val()
+                
+            x, y_true, y_pred, y_prob = self.x_val, self.true_val, self.predictions_val, self.probabilities_val
+            
+        elif set == 'test':
+            if not self.predicted_test:
+                self.predict_test()
+                
+            x, y_true, y_pred, y_prob = self.x_test, self.true_test, self.predictions_test, self.probabilities_test
+    
+        
+        if method in ['accuracy', 'precision', 'recall', 'f1', 'confusion_matrix']:
+            return method_dict[method](y_true, y_pred, **kwargs)
+        
+        else:
+            return method_dict[method](y_prob, y_true, **kwargs)
 
 
     def save(self,
@@ -583,7 +750,14 @@ class Model(object):
 
 
     def plot_training(self, path=None):
-        """Plot the training."""
+        """
+        Plot the training history.
+        
+        Parameters
+        ----------
+        path : str
+            The path to save the plot.
+        """
         fig, (ax1, ax2)=plt.subplots(2, 1, figsize=(10, 8))
 
         # Plot accuracy
@@ -715,7 +889,7 @@ class Model(object):
             sns.histplot(x="prob", data=df_aux, hue='class', color='b', ax=ax, bins=bins)
             ax.set_title(title)
             ax.legend([f"Class 1: {c1}", f"Class 0: {c2}"])
-            ax.set_xlabel(f"P(x={c1})")
+            ax.set_xlabel(f"P(x={c1})")s
 
             # Calculates the ROC Coordinates and plots the ROC Curves
             ax_bottom=plt.subplot(2, 6, i+7)
