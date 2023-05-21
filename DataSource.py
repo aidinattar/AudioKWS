@@ -95,7 +95,9 @@ class DataSource(object):
         print('Example file tensor:', self.filenames[0])
 
 
-    def train_test_split(self, test_ratio=.8, val_ratio=.05):
+    def train_test_split(self,
+                         test_ratio:float=.15,
+                         val_ratio:float=.05):
         """
         Splits the data into training, testing and validation sets.
         
@@ -134,7 +136,9 @@ class DataSource(object):
 
 
     def print_split(self):
-        """Print the split."""
+        """
+        Print the split.
+        """
         print('Training set size', len(self.train_files))
         print('Validation set size', len(self.val_files))
         print('Test set size', len(self.test_files))
@@ -151,7 +155,8 @@ class DataSource(object):
         # Create a dataset of the waveforms.
         self.waveform_ds = files_ds.map(
             map_func=get_waveform_and_label,
-            num_parallel_calls=self.AUTOTUNE)
+            num_parallel_calls=self.AUTOTUNE
+        )
 
 
     def plot_waveform_example(self,
@@ -350,14 +355,10 @@ class DataSource(object):
         """
         Get the spectrogram dataset.
         """
-        def get_spectrogram_and_label_id(audio, label):
-            spectrogram = get_spectrogram(audio)
-            label_id = tf.argmax(label == self.commands)
-            return spectrogram, label_id
-
         self.spectrogram_ds = self.waveform_ds.map(
-            get_spectrogram_and_label_id,
-            num_parallel_calls=self.AUTOTUNE)
+            self._get_spectrogram_and_label_id,
+            num_parallel_calls=self.AUTOTUNE
+        )
 
 
     def plot_spectrogram_example(self,
@@ -477,7 +478,7 @@ class DataSource(object):
         """
         Define the dataset.
         """
-        self.train_ds = self.spectrogram_ds
+        self.train_ds = self._preprocess_dataset(self.train_files)
         self.val_ds = self._preprocess_dataset(self.val_files)
         self.test_ds = self._preprocess_dataset(self.test_files)
 
@@ -487,11 +488,13 @@ class DataSource(object):
         Batch the dataset.
         """
         train_ds = self.train_ds.batch(self.batch_size)
-        val_ds  = self.val_ds.batch(self.batch_size)
+        val_ds   = self.val_ds.batch(self.batch_size)
+        test_ds  = self.test_ds.batch(self.batch_size)
 
         self.train_ds = train_ds.cache().prefetch(self.AUTOTUNE)
         self.val_ds = val_ds.cache().prefetch(self.AUTOTUNE)
-        
+        self.test_ds = test_ds.cache().prefetch(self.AUTOTUNE)
+
         
     def copy(self):
         """
