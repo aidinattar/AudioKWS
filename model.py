@@ -13,7 +13,7 @@ from sklearn.metrics import roc_curve, auc, precision_recall_curve
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from DataSource import DataSource
-from tensorflow.keras.metrics import Accuracy, Precision, Recall, F1Score, AUC
+from tensorflow.keras.metrics import Accuracy, Precision, Recall, f1_score, AUC
 from sklearn.preprocessing import label_binarize
 
 class Model(object):
@@ -159,7 +159,7 @@ class Model(object):
         self.history = self.model.fit(self.inputs.train_ds,
                                       epochs = epochs,
                                       callbacks = callbacks,
-                                      validation_data = self.inputs.val_ds
+                                      validation_data = self.inputs.val_ds,
                                       verbose = verbose)
         
         self.trained = True
@@ -396,7 +396,7 @@ class Model(object):
         f1 : float
             The F1 score.
         """
-        f1=F1Score(**kwargs)
+        f1=f1_score(**kwargs)
         f1.update_state(y_true, y_pred)
         
         return f1.result().numpy()
@@ -889,7 +889,7 @@ class Model(object):
             sns.histplot(x="prob", data=df_aux, hue='class', color='b', ax=ax, bins=bins)
             ax.set_title(title)
             ax.legend([f"Class 1: {c1}", f"Class 0: {c2}"])
-            ax.set_xlabel(f"P(x={c1})")s
+            ax.set_xlabel(f"P(x={c1})")
 
             # Calculates the ROC Coordinates and plots the ROC Curves
             ax_bottom=plt.subplot(2, 6, i+7)

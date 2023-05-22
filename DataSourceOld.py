@@ -10,6 +10,9 @@ import tensorflow as tf
 import soundfile as sf
 from IPython import display
 from utils.input import get_waveform_and_label, get_spectrogram, plot_spectrogram
+import librosa
+import librosa.display
+
 
 # Set the seed value for experiment reproducibility.
 seed = 42
@@ -448,6 +451,44 @@ class DataSource(object):
         return spectrogram, label_id
 
 
+    def _log_mel_feature_extraction(self,
+                                   waveform):
+        """
+        Perform log mel feature extraction on the waveform.
+        
+        Parameters
+        ----------
+        waveform : numpy.ndarray
+            The waveform.
+            
+        Returns
+        -------
+        log_mel_features : numpy.ndarray
+            The log mel features.
+        """
+        # Convert waveform to mono if it has multiple channels
+        if waveform.ndim > 1:
+            waveform = np.mean(waveform, axis=1)
+        
+        # Compute the log mel spectrogram
+        mel_spectrogram = librosa.feature.melspectrogram(
+            y=waveform,
+            sr=16000,
+            n_fft=400,
+            hop_length=160,
+            n_mels=40,
+            fmin=20,
+            fmax=4000
+        )
+        
+        # Apply logarithm to the mel spectrogram to obtain log mel features
+        log_mel_features = librosa.amplitude_to_db(
+            mel_spectrogram,
+            ref=np.max
+        )
+        
+        return log_mel_features
+
 
     def _preprocess_dataset(self,
                             files):
@@ -471,6 +512,11 @@ class DataSource(object):
         output_ds = output_ds.map(
             map_func=self._get_spectrogram_and_label_id,
             num_parallel_calls=self.AUTOTUNE)
+        output_ds = output_ds.map(
+            map_func=lambda audio, label: (self._log_mel_feature_extraction(audio), label),
+            num_parallel_calls=self.AUTOTUNE
+        )
+        
         return output_ds
 
 
