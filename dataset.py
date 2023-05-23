@@ -67,6 +67,22 @@ class DataLoader:
         )
 
 
+    def get_commands(self):
+        """
+        Get the commands in the dataset.
+        
+        Returns
+        -------
+        commands : np.array
+            List of commands.
+        """
+        commands = np.array(tf.io.gfile.listdir(str(self.data_dir)))
+        commands = commands[~np.isin(commands, ['README.md', 'testing_list.txt',
+                                                '.DS_Store', 'validation_list.txt',
+                                                '_background_noise_', 'LICENSE'])]
+        return commands
+
+
     def get_filenames(self):
         """
         Get the filenames of the dataset.
@@ -195,6 +211,7 @@ class DataLoader:
 
     def get_spectrogram_STFT_ds(self,
                                 waveform_ds: tf.data.Dataset,
+                                commands,
                                 AUTOTUNE: tf.data.experimental.AUTOTUNE = tf.data.experimental.AUTOTUNE):
         """
         Get spectrogram dataset using STFT.
@@ -203,6 +220,8 @@ class DataLoader:
         ----------
         waveform_ds : tf.data.Dataset
             Dataset of waveforms.
+        commands : np.array
+            List of commands.
         AUTOTUNE : tf.data.experimental.AUTOTUNE
             Number of files to process in parallel.
             Default: tf.data.experimental.AUTOTUNE
@@ -212,9 +231,14 @@ class DataLoader:
         spectrogram_ds : tf.data.Dataset
             Dataset of spectrograms.
         """
+        #spectrogram_ds = waveform_ds.map(
+        #    get_spectrogram_and_label_id,
+        #    num_parallel_calls=AUTOTUNE
+        #)
+        
         spectrogram_ds = waveform_ds.map(
-            get_spectrogram_and_label_id,
-            num_parallel_calls=self.AUTOTUNE
+            lambda audio, label: get_spectrogram_and_label_id(audio, label, commands),
+            num_parallel_calls=AUTOTUNE
         )
                            
         return spectrogram_ds
@@ -243,7 +267,7 @@ class DataLoader:
             map_func=lambda audio, label: (log_mel_feature_extraction(audio), label),
             num_parallel_calls=AUTOTUNE
         )
-        
+
         return spectrogram_ds
 
 
@@ -253,7 +277,8 @@ class DataVisualizer:
     """
     def __init__(self,
                  waveform_ds,
-                 spectrogram_ds):
+                 spectrogram_ds,
+                 commands):
         """
         Initialize the WaveformProcessor class.
         
@@ -263,9 +288,12 @@ class DataVisualizer:
             Dataset of waveforms.
         spectrogram_ds : tf.data.Dataset
             Dataset of spectrograms.
+        commands : list
+            List of commands.
         """
         self.waveform_ds = waveform_ds
         self.spectrogram_ds = spectrogram_ds
+        self.commands = commands
 
     def plot_waveform_example(self,
                               rows:int=3,
@@ -575,7 +603,6 @@ class DatasetBuilder:
                 map_func=get_spectrogram_and_label_id,
                 num_parallel_calls=AUTOTUNE
             )
-
         
         return output_ds
     

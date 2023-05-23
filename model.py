@@ -12,8 +12,7 @@ from utils.metric_eval import plot_roc_curve, get_all_roc_coordinates, \
 from sklearn.metrics import roc_curve, auc, precision_recall_curve
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-from DataSource import DataSource
-from tensorflow.keras.metrics import Accuracy, Precision, Recall, f1_score, AUC
+from tensorflow.keras.metrics import Accuracy, Precision, Recall, F1Score, AUC
 from sklearn.preprocessing import label_binarize
 
 class Model(object):
@@ -27,30 +26,41 @@ class Model(object):
     predicted_test = False
 
     def __init__(self,
-                 inputs:DataSource):
+                 train_ds,
+                 val_ds,
+                 test_ds,
+                 commands):                
         """
         Initialize the class.
         
         Parameters
         ----------
-        inputs : DataSource
-            The data to use for the training.
-        loss : str
-            The loss function.
-        optimizer : str
-            The optimizer.
-        metrics : list
-            The metrics to use.
+        train_ds : tf.data.Dataset
+            The training dataset.
+        val_ds : tf.data.Dataset
+            The validation dataset.
+        test_ds : tf.data.Dataset
+            The test dataset.
+        commands : list
+            The list of commands.
         """
 
-        # Set the attributes.
-        self.inputs = inputs
+        # Get the train, val and test datasets.
+        self.train_ds = train_ds
+        self.val_ds = val_ds
+        self.test_ds = test_ds
+        
+        # Get the commands.
+        self.commands = commands
+        
+        # Get the batch size.
+        self.batch_size = train_ds.element_spec.shape[0]
         
         # Get the shape of the input as the dimensions of the spectrogram.
-        for spectrogram, _ in inputs.spectrogram_ds.take(1):
+        for spectrogram, _ in train_ds.take(1):
             self.input_shape = spectrogram.shape
         # Get the number of classes.
-        self.num_classes = len(self.inputs.commands)
+        self.num_classes = len(self.commands)
     
 
     def _norm_layer(self):
@@ -66,7 +76,7 @@ class Model(object):
         norm_layer = tf.keras.layers.Normalization()
         # Fit the state of the layer to the spectrograms with `Normalization.adapt`.
         return norm_layer.adapt(
-            data = self.inputs.spectrogram_ds.map(
+            data = train_ds.spectrogram_ds.map(
                 map_func = lambda spec,
                 label: spec
             )
@@ -156,10 +166,10 @@ class Model(object):
         if not self.compiled:
             raise Exception('The model has not been compiled yet.')
 
-        self.history = self.model.fit(self.inputs.train_ds,
+        self.history = self.model.fit(self.train_ds,
                                       epochs = epochs,
                                       callbacks = callbacks,
-                                      validation_data = self.inputs.val_ds,
+                                      validation_data = self.val_ds,
                                       verbose = verbose)
         
         self.trained = True
@@ -215,7 +225,7 @@ class Model(object):
         
         preds = self.model.predict(ds)
     
-        batch_size = self.inputs.batch_size
+        batch_size = self.batch_size
         len_data = len(list(ds))*batch_size
 
         for i, (spectrogram, label) in enumerate(ds.take(1)):
@@ -255,7 +265,7 @@ class Model(object):
         """
         Predict the model on the train set.
         """
-        self.x_train, self.true_train, self.predictions_train, self.probabilities_train=self._predict(self.inputs.train_ds)
+        self.x_train, self.true_train, self.predictions_train, self.probabilities_train=self._predict(self.train_ds)
         self.predicted_train = True
 
 
@@ -263,7 +273,7 @@ class Model(object):
         """
         Predict the model on the validation set.
         """
-        self.x_val, self.true_val, self.predictions_val, self.probabilities_val=self._predict(self.inputs.val_ds)
+        self.x_val, self.true_val, self.predictions_val, self.probabilities_val=self._predict(self.val_ds)
         self.predicted_val = True
         
         
@@ -271,19 +281,19 @@ class Model(object):
         """
         Predict the model on the test set.
         """
-        self.x_test, self.true_test, self.predictions_test, self.probabilities_test=self._predict(self.inputs.test_ds)
+        self.x_test, self.true_test, self.predictions_test, self.probabilities_test=self._predict(self.test_ds)
         self.predicted_test = True
 
 
     def evaluate_train(self):
         """Evaluate the model on the train set."""
-        self.results_train=self.model.evaluate(self.inputs.train_ds)
+        self.results_train=self.model.evaluate(self.train_ds)
         print(self.results_train)
     
 
     def evaluate_val(self):
         """Evaluate the model on the validation set."""
-        self.results_val=self.model.evaluate(self.inputs.val_ds)
+        self.results_val=self.model.evaluate(self.val_ds)
         print(self.results_val)
 
 
@@ -292,7 +302,7 @@ class Model(object):
         #y_pred, y_true=self.predict_test()
         #test_acc=sum(y_pred == y_true) / len(y_true)
         #print(f'Test set accuracy: {test_acc:.0%}')
-        self.results_test=self.model.evaluate(self.inputs.test_ds)
+        self.results_test=self.model.evaluate(self.test_ds)
 
 
     def _accuracy(self,
@@ -396,7 +406,7 @@ class Model(object):
         f1 : float
             The F1 score.
         """
-        f1=f1_score(**kwargs)
+        f1=F1Score(**kwargs)
         f1.update_state(y_true, y_pred)
         
         return f1.result().numpy()
@@ -802,7 +812,7 @@ class Model(object):
 
         cm=tf.math.confusion_matrix(self.y_true, self.y_pred)
         plt.figure(figsize=(10, 12))
-        sns.heatmap(cm, xticklabels=self.inputs.commands, yticklabels=self.inputs.commands, annot=True, fmt='g')
+        sns.heatmap(cm, xticklabels=self.commands, yticklabels=self.commands, annot=True, fmt='g')
         plt.xlabel('Prediction')
         plt.ylabel('Label')
         plt.show()
@@ -850,13 +860,12 @@ class Model(object):
             plt.savefig(path)
 
 
-
     def plot_roc_OvO(self, path=None):
         """Plots the Probability Distributions and the ROC Curves One vs One"""
         self.predict_val()
 
         classes_combinations=[]
-        class_list=list(self.inputs.commands)
+        class_list=list(self.commands)
         for i in range(len(class_list)):
             for j in range(i+1, len(class_list)):
                 classes_combinations.append([class_list[i], class_list[j]])

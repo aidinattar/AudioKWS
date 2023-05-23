@@ -122,6 +122,11 @@ def get_spectrogram_and_label_id(audio,
     return spectrogram, label_id
 
 
+####################
+# Mel Spectrogram  #
+# Not working      #
+# with tf.Dataset  #
+####################
 def log_mel_feature_extraction(waveform):
     """
     Perform log mel feature extraction on the waveform.
@@ -136,6 +141,7 @@ def log_mel_feature_extraction(waveform):
     log_mel_features : numpy.ndarray
         The log mel features.
     """
+    
     # Convert waveform to mono if it has multiple channels
     if waveform.ndim > 1:
         waveform = np.mean(waveform, axis=1)
@@ -158,6 +164,62 @@ def log_mel_feature_extraction(waveform):
     )
     
     return log_mel_features
+
+
+def log_mel_feature_extraction(waveform):
+    """
+    Perform log mel feature extraction on the waveform.
+
+    Parameters
+    ----------
+    waveform : tf.Tensor
+        The waveform tensor.
+
+    Returns
+    -------
+    log_mel_features : tf.Tensor
+        The log mel features tensor.
+    """
+    # Convert waveform to mono if it has multiple channels
+    if tf.rank(waveform) > 1:
+        waveform = tf.reduce_mean(waveform, axis=-1)
+
+    # Compute the log mel spectrogram
+    spectrogram = tf.signal.stft(
+        signals=waveform,
+        frame_length=400,
+        frame_step=160,
+        fft_length=400
+    )
+    magnitude_spectrogram = tf.abs(spectrogram)
+
+    # Apply mel filterbank
+    num_mel_bins = 40
+    linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
+        num_mel_bins=num_mel_bins,
+        num_spectrogram_bins=400,
+        sample_rate=16000,
+        lower_edge_hertz=20,
+        upper_edge_hertz=4000
+    )
+    mel_spectrogram = tf.matmul(magnitude_spectrogram, linear_to_mel_weight_matrix)
+
+    # Apply logarithm to the mel spectrogram to obtain log mel features
+    log_mel_features = tf.math.log(mel_spectrogram + 1e-6)
+
+    # Frame stacking
+    left_context = 23
+    right_context = 8
+    num_frames = tf.shape(log_mel_features)[1]
+
+    stacked_features = tf.TensorArray(dtype=log_mel_features.dtype, size=num_frames)
+    for i in tf.range(num_frames):
+        frame = log_mel_features[:, tf.maximum(i - left_context, 0):i + right_context + 1]
+        stacked_features = stacked_features.write(i, frame)
+
+    stacked_features = stacked_features.stack()
+
+    return stacked_features
 
 
 def plot_spectrogram(spectrogram,
