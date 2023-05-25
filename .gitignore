@@ -205,3 +205,4 @@ poetry.toml
 
 DATA/*
 figures
+.DS_Store
