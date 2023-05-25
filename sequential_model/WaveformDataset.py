@@ -25,6 +25,13 @@ class WaveformDataset(Dataset):
         self.idx_to_label = {idx: label for idx, label in enumerate(np.unique(self.y_names))}
         self.y = np.array([self.label_to_idx[label] for label in self.y_names])
         self.y = torch.tensor(self.y)
+        self.n_classes = len(self.label_to_idx)
+
+    def get_n_classes(self):
+        return self.n_classes
+    
+    def get_idx2label(self):
+        return self.idx_to_label
 
     def __len__(self):
         return len(self.y)
