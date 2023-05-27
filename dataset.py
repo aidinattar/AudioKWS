@@ -10,7 +10,7 @@ from utils.input import get_waveform_and_label,\
                         get_spectrogram,\
                         get_spectrogram_and_label_id,\
                         log_mel_feature_extraction
-
+from tqdm import tqdm
 
 class DataLoader:
     """
@@ -174,6 +174,39 @@ class DataLoader:
                 action()
 
         return train_files, val_files, test_files
+    
+    def get_waveform_data (self,
+                            filenames: list,
+                            ):
+        """
+        Get waveform dataset as numpy arrays.
+        This method creates a dataset of waveforms from a list of filenames.
+        
+        Parameters
+        ----------
+        filenames : list
+            List of filenames.
+            
+        Returns
+        -------
+        data: list of numpy arrays
+            List of waveforms.
+        labels: list of numpy arrays
+            List of labels for each waveform.
+        """  
+        data = []
+        labels = []
+
+        # parallelize the process
+        from multiprocessing import Pool
+        with Pool() as p:
+            for waveform, label in tqdm(p.imap(get_waveform_and_label, filenames)):
+                data.append(waveform.numpy())
+                labels.append(label.numpy().decode("utf-8"))
+
+        return data, labels
+
+
     
     
     def get_waveform_ds(self,

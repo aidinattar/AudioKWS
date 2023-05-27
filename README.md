@@ -12,6 +12,11 @@ The reference dataset used for small-footprint keyword spotting is the "Speech C
 
 The speech dataset can be downloaded from the following link: [Speech Commands Dataset](http://download.tensorflow.org/data/speech_commands_v0.02.tar.gz) (2.11 GB uncompressed)
 
+Examples of the waveforms follows:
+
+<p align="center">
+<img src="sequential_model/plots/waveform_ds.png"  width="800"/> </p>
+
 ## Project Developments
 The project offers several possible developments and experiments, including:
 

@@ -1,0 +1,1 @@
+{'hidden_size': 200, 'num_classes': 35, 'num_layers': 2, 'attention': False, 'dropout': 0.4, 'bidirectional': False}
