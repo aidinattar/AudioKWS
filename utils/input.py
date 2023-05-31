@@ -122,51 +122,86 @@ def get_spectrogram_and_label_id(audio,
     return spectrogram, label_id
 
 
-####################
-# Mel Spectrogram  #
-# Not working      #
-# with tf.Dataset  #
-####################
-def log_mel_feature_extraction(waveform):
+def get_log_mel_features_and_label_id(audio,
+                                      label,
+                                      commands):
     """
-    Perform log mel feature extraction on the waveform.
+    Convert the waveform to log mel features via a STFT.
     
     Parameters
     ----------
-    waveform : numpy.ndarray
-        The waveform.
+    audio : tf.Tensor
+        A waveform tensor.
+    label : tf.Tensor
+        A label tensor.
+    commands : np.ndarray
+        A tensor of commands.
         
     Returns
     -------
-    log_mel_features : numpy.ndarray
-        The log mel features.
+    log_mel_features : tf.Tensor
+        A log mel features tensor.
+    label_id : tf.Tensor
+        A label ID tensor.
     """
-    
-    # Convert waveform to mono if it has multiple channels
-    if waveform.ndim > 1:
-        waveform = np.mean(waveform, axis=1)
-    
-    # Compute the log mel spectrogram
-    mel_spectrogram = librosa.feature.melspectrogram(
-        y=waveform,
-        sr=16000,
-        n_fft=400,
-        hop_length=160,
-        n_mels=40,
-        fmin=20,
-        fmax=4000
-    )
-    
-    # Apply logarithm to the mel spectrogram to obtain log mel features
-    log_mel_features = librosa.amplitude_to_db(
-        mel_spectrogram,
-        ref=np.max
-    )
-    
-    return log_mel_features
+    log_mel_features = log_mel_feature_extraction(audio)
+    label_id = tf.argmax(label == commands)
+    return log_mel_features, label_id
 
 
 def log_mel_feature_extraction(waveform):
+    """
+    Perform log mel feature extraction on the waveform.
+
+    Parameters
+    ----------
+    waveform : tf.Tensor
+        The waveform tensor.
+
+    Returns
+    -------
+    log_mel_features : tf.Tensor
+        The log mel features tensor.
+    """
+
+    # Convert waveform to mono if it has multiple channels
+    if waveform.shape.ndims > 1:
+        waveform = tf.reduce_mean(waveform, axis=-1)
+
+    # Compute the log mel spectrogram
+    mel_spectrogram = tf.signal.linear_to_mel_weight_matrix(
+        num_mel_bins=40,
+        num_spectrogram_bins=400,
+        sample_rate=16000,
+        lower_edge_hertz=20,
+        upper_edge_hertz=4000
+    )
+
+    #mel_spectrogram = tf.transpose(mel_spectrogram)
+    
+    frame_length = 400
+    frame_step = 160
+    fft_length = 798  # Adjust the fft_length to have 400 frequency bins in the spectrogram
+
+    stft = tf.signal.stft(
+        waveform,
+        frame_length=frame_length,
+        frame_step=frame_step,
+        fft_length=fft_length,
+        window_fn=tf.signal.hann_window,
+        pad_end=False
+    )
+
+    mel_spectrogram = tf.matmul(tf.abs(stft), mel_spectrogram)
+
+    # Apply logarithm to the mel spectrogram to obtain log mel features
+    log_mel_features = tf.math.log(mel_spectrogram + 1e-6)
+
+    return log_mel_features
+
+
+
+def log_mel_feature_extraction_(waveform):
     """
     Perform log mel feature extraction on the waveform.
 
