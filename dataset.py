@@ -9,7 +9,7 @@ from utils.input import get_waveform_and_label,\
                         plot_spectrogram,\
                         get_spectrogram,\
                         get_spectrogram_and_label_id,\
-                        log_mel_feature_extraction
+                        get_log_mel_features_and_label_id
 from tqdm import tqdm
 
 class DataLoader:
@@ -176,7 +176,7 @@ class DataLoader:
         return train_files, val_files, test_files
     
     def get_waveform_data (self,
-                            filenames: list,
+                           filenames: list,
                             ):
         """
         Get waveform dataset as numpy arrays.
@@ -207,8 +207,6 @@ class DataLoader:
         return data, labels
 
 
-    
-    
     def get_waveform_ds(self,
                         filenames: list,
                         AUTOTUNE: tf.data.experimental.AUTOTUNE = tf.data.experimental.AUTOTUNE):
@@ -279,6 +277,7 @@ class DataLoader:
     
     def get_spectrogram_logmel_ds(self,
                                   waveform_ds: tf.data.Dataset,
+                                  commands,
                                   AUTOTUNE: tf.data.experimental.AUTOTUNE = tf.data.experimental.AUTOTUNE):
         """
         Get spectrogram dataset using log mel spectrogram.
@@ -297,7 +296,7 @@ class DataLoader:
             Dataset of spectrograms.
         """
         spectrogram_ds = waveform_ds.map(
-            map_func=lambda audio, label: (log_mel_feature_extraction(audio), label),
+            map_func=lambda audio, label: get_log_mel_features_and_label_id(audio, label, commands),
             num_parallel_calls=AUTOTUNE
         )
 
