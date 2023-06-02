@@ -5,12 +5,15 @@ import tensorflow as tf
 import soundfile as sf
 import matplotlib.pyplot as plt
 from IPython import display
-from utils.input import get_waveform_and_label,\
-                        plot_spectrogram,\
-                        get_spectrogram,\
-                        get_spectrogram_and_label_id,\
-                        get_log_mel_features_and_label_id
+from utils.input import get_waveform_and_label
+from utils.plot import plot_spectrogram,\
+                        plot_features
+from utils.preprocessing import get_spectrogram,\
+                               get_spectrogram_and_label_id,\
+                               get_log_mel_features_and_label_id,\
+                               get_mfcc_and_label_id
 from tqdm import tqdm
+
 
 class DataLoader:
     """
@@ -301,6 +304,36 @@ class DataLoader:
         )
 
         return spectrogram_ds
+    
+    
+    def get_spectrogram_mfcc_ds(self,
+                                waveform_ds: tf.data.Dataset,
+                                commands,
+                                AUTOTUNE: tf.data.experimental.AUTOTUNE = tf.data.experimental.AUTOTUNE):
+        """
+        Get spectrogram dataset using MFCC.
+        
+        Parameters
+        ----------
+        waveform_ds : tf.data.Dataset
+            Dataset of waveforms.
+        commands : np.array
+            List of commands.
+        AUTOTUNE : tf.data.experimental.AUTOTUNE
+            Number of files to process in parallel.
+            Default: tf.data.experimental.AUTOTUNE
+            
+        Returns
+        -------
+        spectrogram_ds : tf.data.Dataset
+            Dataset of spectrograms.
+        """
+        spectrogram_ds = waveform_ds.map(
+            map_func=lambda audio, label: get_mfcc_and_label_id(audio, label, commands),
+            num_parallel_calls=AUTOTUNE
+        )
+        
+        return spectrogram_ds
 
 
 class DataVisualizer:
@@ -439,7 +472,7 @@ class DataVisualizer:
             print('Waveform shape:', waveform.shape)
             print('Spectrogram shape:', spectrogram.shape)
             print('Audio playback')
-            display.Audio(waveform, rate=rate)
+            display.display(display.Audio(waveform, rate=rate))
         
         if save:
             if name is None:
@@ -498,7 +531,7 @@ class DataVisualizer:
             r = i // cols
             c = i % cols
             ax = axes[r][c]
-            plot_spectrogram(spectrogram.numpy(), ax)
+            plot_features(spectrogram.numpy(), ax)
             ax.set_title(self.commands[label_id.numpy()])
             ax.axis('off')
 
@@ -517,64 +550,6 @@ class DataVisualizer:
             
         if return_fig:
             return plt.gcf()
-
-
-    def listen_spectrogram(self,
-                            n:int=0,
-                            rate:int=16000,
-                            return_audio:bool=False,
-                            show:bool=True,
-                            save:bool=False,
-                            dir:str='figures',
-                            name:str=None):
-        """
-        Listen to a selected spectrogram.
-
-        Parameters
-        ----------
-        n : int
-            The index of the spectrogram to listen to.
-        rate : int
-            The rate of the audio.
-        return_audio : bool
-            Whether to return the audio.
-        show : bool
-            Whether to display the audio.
-        save : bool
-            Whether to save the audio.
-        dir : str
-            The directory to save the audio.
-        name : str
-            The name of the audio file.
-            
-        Returns
-        -------
-        audio : np.array
-            The audio.
-        """
-        for spectrogram, label in self.spectrogram_ds.skip(n).take(1):
-            label = label.numpy().decode('utf-8')
-        print('Label:', label)
-        print('Spectrogram shape:', spectrogram.shape)
-        print('Audio playback')
-        
-        if show:
-            display.display(display.Audio(tf.squeeze(spectrogram).numpy()))
-        
-        if save:
-            if name is None:
-                name = f'audio_Label{label}.wav'
-            sf.write(
-                os.path.join(
-                    dir,
-                    name
-                ),
-                tf.squeeze(spectrogram).numpy(),
-                rate
-            )
-            
-        if return_audio:
-            return tf.squeeze(spectrogram).numpy(), rate
 
 
 class DatasetBuilder:
