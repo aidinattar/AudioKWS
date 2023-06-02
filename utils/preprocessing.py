@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+from scipy.fftpack import dct
 
 def get_spectrogram(
     waveform: tf.Tensor,
@@ -216,7 +217,8 @@ def log_mel_feature_extraction_(waveform):
 
 def compute_mfcc(
     log_mel_features: tf.Tensor,
-    num_mfcc:int=13) -> tf.Tensor:
+    num_mfcc:int=13
+) -> tf.Tensor:
     """
     Compute MFCC from log mel features.
 
@@ -266,6 +268,33 @@ def get_mfcc_and_label_id(audio,
     mfcc_features = tf.transpose(compute_mfcc(log_mel_features))
     label_id = tf.argmax(label == commands)
     return mfcc_features, label_id
+
+
+def compute_mfcc_map(
+    log_mel_spectrum: tf.Tensor,
+    num_cepstral_coeffs:int=13,
+    dct_type:int=2,
+)-> tf.Tensor:
+    """
+    Compute MFCC from log mel features.
+    
+    Parameters
+    ----------
+    log_mel_features : tf.Tensor
+        Log mel features tensor of shape (batch_size, time_steps, num_mel_bins).
+    num_mfcc : int, optional
+        Number of MFCC coefficients to compute (default is 13).
+    dct_type : int, optional
+        Type of DCT (discrete cosine transform) to use (default is 2).
+    
+    Returns
+    -------
+    mfcc : tf.Tensor
+        MFCC tensor of shape (batch_size, time_steps, num_mfcc).
+    """
+    mfcc = dct(log_mel_spectrum.numpy(), type=dct_type, axis=-1, norm='ortho')[:, :num_cepstral_coeffs]
+    mfcc = tf.convert_to_tensor(mfcc)
+    return mfcc
 
 
 def compute_delta(
