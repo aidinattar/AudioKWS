@@ -1,34 +1,42 @@
 import tensorflow as tf
-import numpy as np
-import matplotlib.pyplot as plt
-#from DataSource import DataSource
 from tensorflow.keras.layers import Conv2D, MaxPooling2D,\
-                                    Flatten, Dense,\
-                                    Dropout, BatchNormalization,\
-                                    Activation, Input,\
+                                    Flatten, Dense, Input,\
                                     Resizing
 
-from model import model
+from model import Model
 from utils.custom_layers import LowRankDense
 
 
-class dnn_baseline(model):
+class DNNBaseline(Model):
     """
     A class to manage the model cnn-trad-fpool3 described in [Sainath15].
     """
     def init(self,
-             inputs:DataSource):
+             train_ds,
+             val_ds,
+             test_ds,
+             commands):
         """
         Initialize the class.
         
         Parameters
         ----------
-        inputs : DataSource
-            Input data.
+        train_ds : tf.data.Dataset
+            A dataset of training data.
+        val_ds : tf.data.Dataset
+            A dataset of validation data.
+        test_ds : tf.data.Dataset
+            A dataset of test data.
+        commands : list
+            A list of commands.
         """
         super().__init__(
-            inputs=inputs,
+            train_ds=train_ds,
+            val_ds=val_ds,
+            test_ds=test_ds,
+            commands=commands
         )
+
 
     def define_model(self):
         """Define the model."""
@@ -41,6 +49,9 @@ class dnn_baseline(model):
 
         # Normalize the input spectrogram
         x = self._norm_layer()(x)
+
+        # Add a channel dimension
+        x = tf.expand_dims(x, axis=-1)
 
         # Flatten the input spectrogram
         x = Flatten()(x)
@@ -61,21 +72,34 @@ class dnn_baseline(model):
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
 
 
-class cnn_trad_fpool3(model):
+class CNNTradFPool3(Model):
     """A class to manage the model cnn-trad-fpool3 described in [Sainath15]."""
     def init(self,
-             inputs:DataSource):
+             train_ds,
+             val_ds,
+             test_ds,
+             commands):
         """
         Initialize the class.
         
         Parameters
         ----------
-        inputs : DataSource
-            Input data.
+        train_ds : tf.data.Dataset
+            A dataset of training data.
+        val_ds : tf.data.Dataset
+            A dataset of validation data.
+        test_ds : tf.data.Dataset
+            A dataset of test data.
+        commands : list
+            A list of commands.
         """
         super().__init__(
-            inputs=inputs,
+            train_ds=train_ds,
+            val_ds=val_ds,
+            test_ds=test_ds,
+            commands=commands
         )
+
 
     def define_model(self):
         """Define the model."""
@@ -88,6 +112,9 @@ class cnn_trad_fpool3(model):
 
         # Normalize the input spectrogram
         x = self._norm_layer()(x)
+
+        # Add a channel dimension
+        x = tf.expand_dims(x, axis=-1)
 
         # Create a 2D Convolutional layer with 64 filters and a kernel size of 20x8
         x = Conv2D(filters=64, kernel_size=(20, 8), activation='relu', padding='same')(x)
@@ -118,21 +145,34 @@ class cnn_trad_fpool3(model):
 
 
 
-class cnn_one_fpool3(model):
+class CNNOneFPool3(Model):
     """A class to manage the model cnn-one-fpool3 described in [Sainath15]."""
     def init(self,
-             inputs:DataSource):
+             train_ds,
+             val_ds,
+             test_ds,
+             commands):
         """
         Initialize the class.
         
         Parameters
         ----------
-        inputs : DataSource
-            Input data.
+        train_ds : tf.data.Dataset
+            A dataset of training data.
+        val_ds : tf.data.Dataset
+            A dataset of validation data.
+        test_ds : tf.data.Dataset
+            A dataset of test data.
+        commands : list
+            A list of commands.
         """
         super().__init__(
-            inputs=inputs,
+            train_ds=train_ds,
+            val_ds=val_ds,
+            test_ds=test_ds,
+            commands=commands
         )
+        
 
     def define_model(self):
         """Define the model."""
@@ -145,6 +185,9 @@ class cnn_one_fpool3(model):
 
         # Normalize the input spectrogram
         x = self._norm_layer()(x)
+
+        # Add a channel dimension
+        x = tf.expand_dims(x, axis=-1)
 
         # Create a 2D Convolutional layer with 64 filters and a kernel size of 20x8
         x = Conv2D(filters=54, kernel_size=(32, 8), activation='relu', padding='same')(x)
@@ -171,22 +214,34 @@ class cnn_one_fpool3(model):
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
 
 
-
-class cnn_one_fstride4(model):
+class CNNOneFStride4(Model):
     """A class to manage the model cnn-one-fstride4 described in [Sainath15]."""
     def init(self,
-             inputs:DataSource):
+             train_ds,
+             val_ds,
+             test_ds,
+             commands):
         """
         Initialize the class.
         
         Parameters
         ----------
-        inputs : DataSource
-            Input data.
+        train_ds : tf.data.Dataset
+            A dataset of training data.
+        val_ds : tf.data.Dataset
+            A dataset of validation data.
+        test_ds : tf.data.Dataset
+            A dataset of test data.
+        commands : list
+            A list of commands.
         """
         super().__init__(
-            inputs=inputs,
+            train_ds=train_ds,
+            val_ds=val_ds,
+            test_ds=test_ds,
+            commands=commands
         )
+        
 
     def define_model(self):
         """Define the model."""
@@ -199,6 +254,9 @@ class cnn_one_fstride4(model):
 
         # Normalize the input spectrogram
         x = self._norm_layer()(x)
+
+        # Add a channel dimension
+        x = tf.expand_dims(x, axis=-1)
 
         # Create a 2D Convolutional layer with 64 filters and a kernel size of 20x8
         x = Conv2D(filters=186, kernel_size=(32, 8), strides=(1, 4), activation='relu', padding='same')(x)
@@ -225,22 +283,34 @@ class cnn_one_fstride4(model):
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
 
 
-
-class cnn_one_fstride8(model):
-    """A class to manage the model cnn-one-fstride4 described in [Sainath15]."""
+class CNNOneFStride8(Model):
+    """A class to manage the model cnn-one-fstride8 described in [Sainath15]."""
     def init(self,
-             inputs:DataSource):
+             train_ds,
+             val_ds,
+             test_ds,
+             commands):
         """
         Initialize the class.
         
         Parameters
         ----------
-        inputs : DataSource
-            Input data.
+        train_ds : tf.data.Dataset
+            A dataset of training data.
+        val_ds : tf.data.Dataset
+            A dataset of validation data.
+        test_ds : tf.data.Dataset
+            A dataset of test data.
+        commands : list
+            A list of commands.
         """
         super().__init__(
-            inputs=inputs,
+            train_ds=train_ds,
+            val_ds=val_ds,
+            test_ds=test_ds,
+            commands=commands
         )
+        
 
     def define_model(self):
         """Define the model."""
@@ -253,6 +323,9 @@ class cnn_one_fstride8(model):
 
         # Normalize the input spectrogram
         x = self._norm_layer()(x)
+
+        # Add a channel dimension
+        x = tf.expand_dims(x, axis=-1)
 
         # Create a 2D Convolutional layer with 336 filters and a kernel size of 32x8
         x = Conv2D(filters=336, kernel_size=(32, 8), strides=(1, 8), activation='relu', padding='same')(x)
@@ -279,22 +352,34 @@ class cnn_one_fstride8(model):
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
 
 
-
-class cnn_one_tstride2(model):
+class CNNOneTStride2(Model):
     """A class to manage the model cnn-one-tstride2 described in [Sainath15]."""
     def init(self,
-             inputs:DataSource):
+             train_ds,
+             val_ds,
+             test_ds,
+             commands):
         """
         Initialize the class.
         
         Parameters
         ----------
-        inputs : DataSource
-            Input data.
+        train_ds : tf.data.Dataset
+            A dataset of training data.
+        val_ds : tf.data.Dataset
+            A dataset of validation data.
+        test_ds : tf.data.Dataset
+            A dataset of test data.
+        commands : list
+            A list of commands.
         """
         super().__init__(
-            inputs=inputs,
+            train_ds=train_ds,
+            val_ds=val_ds,
+            test_ds=test_ds,
+            commands=commands
         )
+        
 
     def define_model(self):
         """Define the model."""
@@ -307,6 +392,9 @@ class cnn_one_tstride2(model):
 
         # Normalize the input spectrogram
         x = self._norm_layer()(x)
+
+        # Add a channel dimension
+        x = tf.expand_dims(x, axis=-1)
 
         # Create a 2D Convolutional layer with 78 filters and a kernel size of 16x8
         x = Conv2D(filters=78, kernel_size=(16, 8), strides=(2, 1), activation='relu', padding='same')(x)
@@ -340,22 +428,34 @@ class cnn_one_tstride2(model):
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
 
 
-
-class cnn_one_tstride4(model):
+class CNNOneTStride4(Model):
     """A class to manage the model cnn-one-tstride4 described in [Sainath15]."""
     def init(self,
-             inputs:DataSource):
+             train_ds,
+             val_ds,
+             test_ds,
+             commands):
         """
         Initialize the class.
         
         Parameters
         ----------
-        inputs : DataSource
-            Input data.
+        train_ds : tf.data.Dataset
+            A dataset of training data.
+        val_ds : tf.data.Dataset
+            A dataset of validation data.
+        test_ds : tf.data.Dataset
+            A dataset of test data.
+        commands : list
+            A list of commands.
         """
         super().__init__(
-            inputs=inputs,
+            train_ds=train_ds,
+            val_ds=val_ds,
+            test_ds=test_ds,
+            commands=commands
         )
+        
 
     def define_model(self):
         """Define the model."""
@@ -368,6 +468,9 @@ class cnn_one_tstride4(model):
 
         # Normalize the input spectrogram
         x = self._norm_layer()(x)
+
+        # Add a channel dimension
+        x = tf.expand_dims(x, axis=-1)
 
         # Create a 2D Convolutional layer with 100 filters and a kernel size of 16x8
         x = Conv2D(filters=100, kernel_size=(16, 8), strides=(4, 1), activation='relu', padding='same')(x)
@@ -401,22 +504,34 @@ class cnn_one_tstride4(model):
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
 
 
-
-class cnn_one_tstride8(model):
+class CNNOneTStride8(Model):
     """A class to manage the model cnn-one-tstride8 described in [Sainath15]."""
     def init(self,
-             inputs:DataSource):
+             train_ds,
+             val_ds,
+             test_ds,
+             commands):
         """
         Initialize the class.
         
         Parameters
         ----------
-        inputs : DataSource
-            Input data.
+        train_ds : tf.data.Dataset
+            A dataset of training data.
+        val_ds : tf.data.Dataset
+            A dataset of validation data.
+        test_ds : tf.data.Dataset
+            A dataset of test data.
+        commands : list
+            A list of commands.
         """
         super().__init__(
-            inputs=inputs,
+            train_ds=train_ds,
+            val_ds=val_ds,
+            test_ds=test_ds,
+            commands=commands
         )
+        
 
     def define_model(self):
         """Define the model."""
@@ -429,6 +544,9 @@ class cnn_one_tstride8(model):
 
         # Normalize the input spectrogram
         x = self._norm_layer()(x)
+
+        # Add a channel dimension
+        x = tf.expand_dims(x, axis=-1)
 
         # Create a 2D Convolutional layer with 126 filters and a kernel size of 16x8
         x = Conv2D(filters=126, kernel_size=(16, 8), strides=(8, 1), activation='relu', padding='same')(x)
@@ -462,22 +580,34 @@ class cnn_one_tstride8(model):
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
 
 
-
-class cnn_tpool2(model):
+class CNNTPool2(Model):
     """A class to manage the model cnn-tpool3 described in [Sainath15]."""
     def init(self,
-             inputs:DataSource):
+             train_ds,
+             val_ds,
+             test_ds,
+             commands):
         """
         Initialize the class.
         
         Parameters
         ----------
-        inputs : DataSource
-            Input data.
+        train_ds : tf.data.Dataset
+            A dataset of training data.
+        val_ds : tf.data.Dataset
+            A dataset of validation data.
+        test_ds : tf.data.Dataset
+            A dataset of test data.
+        commands : list
+            A list of commands.
         """
         super().__init__(
-            inputs=inputs,
+            train_ds=train_ds,
+            val_ds=val_ds,
+            test_ds=test_ds,
+            commands=commands
         )
+        
 
     def define_model(self):
         """Define the model."""
@@ -490,6 +620,9 @@ class cnn_tpool2(model):
 
         # Normalize the input spectrogram
         x = self._norm_layer()(x)
+
+        # Add a channel dimension
+        x = tf.expand_dims(x, axis=-1)
 
         # Create a 2D Convolutional layer with 94 filters and a kernel size of 21x8
         x = Conv2D(filters=94, kernel_size=(21, 8), activation='relu', padding='same')(x)
@@ -519,22 +652,34 @@ class cnn_tpool2(model):
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
 
 
-
-class cnn_tpool3(model):
+class CNNTPool3(Model):
     """A class to manage the model cnn-tpool3 described in [Sainath15]."""
     def init(self,
-             inputs:DataSource):
+             train_ds,
+             val_ds,
+             test_ds,
+             commands):
         """
         Initialize the class.
         
         Parameters
         ----------
-        inputs : DataSource
-            Input data.
+        train_ds : tf.data.Dataset
+            A dataset of training data.
+        val_ds : tf.data.Dataset
+            A dataset of validation data.
+        test_ds : tf.data.Dataset
+            A dataset of test data.
+        commands : list
+            A list of commands.
         """
         super().__init__(
-            inputs=inputs,
+            train_ds=train_ds,
+            val_ds=val_ds,
+            test_ds=test_ds,
+            commands=commands
         )
+        
 
     def define_model(self):
         """Define the model."""
@@ -547,6 +692,9 @@ class cnn_tpool3(model):
 
         # Normalize the input spectrogram
         x = self._norm_layer()(x)
+
+        # Add a channel dimension
+        x = tf.expand_dims(x, axis=-1)
 
         # Create a 2D Convolutional layer with 94 filters and a kernel size of 21x8
         x = Conv2D(filters=94, kernel_size=(21, 8), activation='relu', padding='same')(x)
