@@ -54,7 +54,7 @@ class Model(object):
         self.commands = commands
         
         # Get the batch size.
-        self.batch_size = train_ds.element_spec.shape[0]
+        self.batch_size = train_ds.element_spec[0].shape[0]
         
         # Get the shape of the input as the dimensions of the spectrogram.
         for spectrogram, _ in train_ds.take(1):
@@ -73,14 +73,14 @@ class Model(object):
             The normalization layer.
         """
         # Create a normalization layer.
-        norm_layer = tf.keras.layers.Normalization()
+        norm_layer = tf.keras.layers.Normalization(axis = None)
         # Fit the state of the layer to the spectrograms with `Normalization.adapt`.
-        return norm_layer.adapt(
-            data = train_ds.spectrogram_ds.map(
-                map_func = lambda spec,
-                label: spec
+        norm_layer.adapt(
+            data = self.train_ds.map(
+                map_func = lambda spec, label: spec
             )
         )
+        return norm_layer
 
 
     def print_input_shape(self):
