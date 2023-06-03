@@ -405,7 +405,7 @@ class DataVisualizer:
 
         # Plot the examples.
         for i, (audio, label) in enumerate(self.waveform_ds.take(n)):
-            r = i // cols
+            r = i // cols   
             c = i % cols
             ax = axes[r][c]
             ax.plot(audio.numpy())
