@@ -4,6 +4,7 @@ from scipy.fftpack import dct
 
 def get_spectrogram(
     waveform: tf.Tensor,
+    input_len: int = 16000,
     frame_length: int = 400,
     frame_step: int = 160,
     fft_length: int = 512
@@ -22,7 +23,6 @@ def get_spectrogram(
         A spectrogram tensor.
     """
     # Zero-padding for an audio waveform with less than 16,000 samples.
-    input_len = 16000
     waveform = waveform[:input_len]
     zero_padding = tf.zeros(
         [16000] - tf.shape(waveform),
@@ -107,6 +107,7 @@ def get_log_mel_features_and_label_id(audio,
 
 def log_mel_feature_extraction(
     waveform: tf.Tensor,
+    input_len: int = 16000,
     frame_length: int = 400,
     frame_step: int = 160,
     fft_length: int = 512
@@ -128,6 +129,17 @@ def log_mel_feature_extraction(
     # Convert waveform to mono if it has multiple channels
     if waveform.shape.ndims > 1:
         waveform = tf.reduce_mean(waveform, axis=-1)
+
+    # Zero-padding for an audio waveform with less than 16,000 samples.
+    waveform = waveform[:input_len]
+    zero_padding = tf.zeros(
+        [16000] - tf.shape(waveform),
+        dtype=tf.float32)
+    # Cast the waveform tensors' dtype to float32.
+    waveform = tf.cast(waveform, dtype=tf.float32)
+    # Concatenate the waveform with `zero_padding`, which ensures all audio
+    # clips are of the same length.
+    waveform = tf.concat([waveform, zero_padding], 0)
 
     # Compute the log mel spectrogram
     mel_spectrogram = tf.signal.linear_to_mel_weight_matrix(
