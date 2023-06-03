@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 from torch.utils.data import Dataset
-
+import pandas as pd
 
 class WaveformDataset(Dataset):
     """
@@ -26,6 +26,26 @@ class WaveformDataset(Dataset):
         self.y = np.array([self.label_to_idx[label] for label in self.y_names])
         self.y = torch.tensor(self.y)
         self.n_classes = len(self.label_to_idx)
+
+        # subsample to the min number of samples per clas
+        label_count = pd.Series(self.y_names).value_counts()
+        min_count = label_count.min()
+        X, y = [], []
+        names = []
+        for label in self.label_to_idx.keys():
+            idxs = np.where(self.y_names == label)[0]
+            idxs = np.random.choice(idxs, min_count, replace=False)
+            X.extend(self.X[idxs])
+            y.extend(self.y[idxs])
+            names.extend(self.y_names[idxs])
+        self.X = torch.stack(X)
+        self.y = torch.stack(y)
+        self.y_names = np.array(names)
+
+        # print distribution
+        print(f'{data_type} distribution:')
+        print(pd.Series(self.y_names).value_counts())
+
 
     def get_n_classes(self):
         return self.n_classes

@@ -134,7 +134,7 @@ def training_pipeline(
     model = getattr(models, name_model)(
         train_ds=train_ds,
         test_ds=test_ds,
-        val_ds=val_ds
+        val_ds=val_ds,
         commands=commands
     )
 
@@ -235,7 +235,7 @@ def evaluation_pipeline(
         path=os.path.join(
             'history',
             '{}.png'.format(model_name)
-    )
+    ))
         
     
     # Evaluate the model.
@@ -250,7 +250,7 @@ def saving_pipeline(
     model_name:str,
     model:tf.keras.Model,
     only_weights:bool=False,
-    path:str,
+    path:str='models',
     verbose:int=1,
     **kwargs
 ):
