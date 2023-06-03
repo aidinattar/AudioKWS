@@ -497,6 +497,7 @@ class DataVisualizer:
     def plot_spectrogram_example(self,
                                  rows:int=3,
                                  cols:int=3,
+                                 figsize:tuple=None,
                                  return_fig:bool=False,
                                  display:bool=True,
                                  savefig:bool=False,
@@ -529,27 +530,36 @@ class DataVisualizer:
         """
         # Get the number of examples.
         n = rows * cols
-        _, axes = plt.subplots(rows, cols, figsize=(10, 12))
+        if figsize is None:
+            figsize = (4*cols, 4*rows)
+        _, axes = plt.subplots(rows, cols, figsize=figsize)
 
         for i, (spectrogram, label_id) in enumerate(self.spectrogram_ds.take(n)):
             r = i // cols
             c = i % cols
-            ax = axes[r][c]
+            if rows>1 and cols>1:
+                ax = axes[r][c]
+            elif rows>1 and cols==1:
+                ax = axes[r]
+            elif rows==1 and cols>1:
+                ax = axes[c]
             plot_features(spectrogram.numpy(), ax)
             ax.set_title(self.commands[label_id.numpy()])
             ax.axis('off')
 
         if display:
             plt.show()
+
             
         if savefig:
             if filename is None:
-                filename = 'spectrogram_examples.png'
+                filename = 'spectrogram_examples.pdf'
             plt.savefig(
                 os.path.join(
                     dir,
                     filename
                 ),
+                bbox_inches='tight'
             )
             
         if return_fig:

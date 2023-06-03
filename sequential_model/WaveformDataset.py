@@ -7,7 +7,7 @@ class WaveformDataset(Dataset):
     """
     Dataset for waveform data
     """
-    def __init__(self, folder_path, data_type='train'):
+    def __init__(self, folder_path, data_type='train', samples=75):
         """
         Args:
             folder_path (str): path to folder with X_train.pt, X_val.pt, X_test.pt, y_train.txt, y_val.txt, y_test.txt
@@ -24,9 +24,13 @@ class WaveformDataset(Dataset):
         self.label_to_idx = {label: idx for idx, label in enumerate(np.unique(self.y_names))}
         self.idx_to_label = {idx: label for idx, label in enumerate(np.unique(self.y_names))}
         self.y = np.array([self.label_to_idx[label] for label in self.y_names])
+        # print (f'y_{data_type}.shape: {self.y}')
+        # print (f'y_{data_type}.shape: {self.idx_to_label}')
+        # print (f'y_{data_type}.shape: {self.y_names}')
         self.y = torch.tensor(self.y)
         self.n_classes = len(self.label_to_idx)
 
+        print (f'X_{data_type}.shape: {self.X.shape}')
         # subsample to the min number of samples per clas
         label_count = pd.Series(self.y_names).value_counts()
         min_count = label_count.min()
@@ -38,13 +42,27 @@ class WaveformDataset(Dataset):
             X.extend(self.X[idxs])
             y.extend(self.y[idxs])
             names.extend(self.y_names[idxs])
+
         self.X = torch.stack(X)
         self.y = torch.stack(y)
         self.y_names = np.array(names)
+        print (f'X_{data_type}.shape: {self.X.shape}')
 
         # print distribution
-        print(f'{data_type} distribution:')
-        print(pd.Series(self.y_names).value_counts())
+        # print(f'{data_type} distribution:')
+        # print(pd.Series(self.y_names).value_counts())
+
+        # subsample to samples
+        if samples is not None:
+            from scipy.signal import resample
+            X = []
+            # map resample to each sample in X
+            for sample in self.X:
+                X.append(resample(sample, samples))
+            self.X = torch.tensor(X)
+            print(f'X_{data_type}.shape: {self.X.shape}')
+
+
 
 
     def get_n_classes(self):

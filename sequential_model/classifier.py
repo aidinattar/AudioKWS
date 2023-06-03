@@ -121,23 +121,14 @@ class classifier ():
                 label_batch = sample_batched[1].to(self.device)                    
                 out = self.Net(x_batch)
 
-                # Compute loss
-                # labels are int values, so we need to convert them to long
-                if label_batch.dtype in [torch.int64, torch.int32]:
-                    label_batch = label_batch.long()
-
                 loss = self.loss_fn(out, label_batch)
-                loss = loss.mean()
+                mean_loss = loss.mean()
             
-                # Backpropagation
-                self.optimizer.zero_grad()
                 loss.backward()
-
-                # Update the weights
                 self.optimizer.step()
 
                 # Save train loss for this batch
-                train_loss.append(loss.detach().cpu().numpy())
+                train_loss.append(mean_loss.detach().cpu().numpy())
             
             # Save average train loss
             train_loss = np.mean(train_loss)
@@ -185,13 +176,11 @@ class classifier ():
                     print ("Early stopping, saving model and optimizer states before exiting")
 
                     self.save_state_dict(f'{save_dir}/model_{epoch_num}.torch')
-                    self.save_optimizer_state(f'{save_dir}/optimizer_{epoch_num}.torch')
                     break
 
             # save model every save_every epochs
             if epoch_num % save_every == 0:
                 self.save_state_dict(f'{save_dir}/model_{epoch_num}.torch')
-                self.save_optimizer_state(f'{save_dir}/optimizer_{epoch_num}.torch')
 
             np.save(f'{save_dir}/train_loss.npy', self.train_loss_log)
             np.save(f'{save_dir}/val_loss.npy', self.val_loss_log)
@@ -338,7 +327,7 @@ class classifier ():
         with torch.no_grad(): # Disable gradient tracking
             for sample_batched in tqdm(test_dataloader):
                 # Move data to device
-                x_batch = [x.to(self.device) for x in sample_batched[0] ]
+                x_batch = sample_batched[0].to(self.device)
 
                 label_batch = sample_batched[1].to(self.device)
                 # Forward pass

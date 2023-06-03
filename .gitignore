@@ -210,3 +210,4 @@ sequential_model/waveform_ds*/*.pt
 sequential_model/waveform_ds*/*.txt
 checkpoints
 checkpoints/*
+spectrogram_example.pdf

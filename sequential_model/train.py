@@ -64,12 +64,13 @@ parser.add_argument('--main_path', type=str, default='waveform_ds', help='main p
 parser.add_argument('--epochs', type=int, default=30, help='number of epochs to train (default: 10)')
 parser.add_argument('--lr', type=float, default=5e-4, help='learning rate ')
 parser.add_argument('--dropout', type=float, default=0.4, help='dropout rate')
-parser.add_argument('--batch_size', type=int, default=16, help='batch size (default: 256)')
+parser.add_argument('--batch_size', type=int, default=128, help='batch size (default: 256)')
 parser.add_argument('--load_pretrained', type=bool, default=False, help='whether to load pretrained model')
 parser.add_argument('--save_dir', type=str, default='checkpoints_no_attention', help='directory to save checkpoints')
 parser.add_argument('--attention', type=bool, default=False, help='whether to use attention')
 parser.add_argument('--bidirectional', type=bool, default=False, help='whether to use bidirectional LSTM')
 parser.add_argument('--seed', type=int, default=1, help='random seed (default: 1)')
+parser.add_argument('--model', type=str, default='LSTM', help='model to use (default: LSTM)', choices=['LSTM', 'CNN'])
 
 args = parser.parse_args()
 
@@ -84,6 +85,7 @@ def main(
     attention=True,
     bidirectional=True,
     seed = 1,
+    model='LSTM'
     ):
 
     if not os.path.exists(save_dir):
@@ -109,24 +111,34 @@ def main(
         for idx, label in idx2label.items():
             f.write(f'{idx} {label}\n')
 
-    from LSTMmodel import LSTMmodel, ModelMetaData
-    # test the model
-    hidden_size = 200
-
-    model = LSTMmodel(
-                      hidden_size=hidden_size, 
-                      num_classes=nlabels, 
-                      dropout=dropout, 
-                      attention=attention,
-                      bidirectional=bidirectional,
-                      )
-    meta = ModelMetaData(
-                      hidden_size=hidden_size, 
-                      num_classes=nlabels, 
-                      dropout=dropout, 
-                      attention=attention,
-                      bidirectional=bidirectional,
-                      )
+    if model == 'LSTM':
+        from LSTMmodel import LSTMmodel, LSTMModelMetaData
+        # test the model
+        hidden_size = 200
+        model = LSTMmodel(
+                        hidden_size=hidden_size, 
+                        num_classes=nlabels, 
+                        dropout=dropout, 
+                        attention=attention,
+                        bidirectional=bidirectional,
+                        )
+        meta = LSTMModelMetaData(
+                        hidden_size=hidden_size, 
+                        num_classes=nlabels, 
+                        dropout=dropout, 
+                        attention=attention,
+                        bidirectional=bidirectional,
+                        )
+    elif model == 'CNN':
+        from CNNmodel import CNNModel, CNNModelMetaData
+        model = CNNModel(
+                        in_channels=1, 
+                        n_classes=nlabels,
+                        )
+        meta = CNNModelMetaData(
+                        in_channels=1,
+                        n_classes=nlabels,
+                        )
 
     meta.save(os.path.join(save_dir, 'model_meta.json'))
 
@@ -194,6 +206,3 @@ if __name__ == '__main__':
         **vars(args)
         )
     
-
-
-
