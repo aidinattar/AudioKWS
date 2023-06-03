@@ -723,18 +723,18 @@ class DatasetBuilder:
 
             elif method=='mfcc':
                 spectrogram_ds = waveform_ds.map(
-                    map_func=lambda audio, label: get_mfcc_and_label_id(audio, label, commands),
+                    map_func=lambda audio, label: get_mfcc_and_label_id(audio, label, self.commands),
                     num_parallel_calls=AUTOTUNE
                 )
                 
             else:
                 spectrogram_ds = waveform_ds.map(
-                    lambda audio, label: get_spectrogram_and_label_id(audio, label, commands),
+                    lambda audio, label: get_spectrogram_and_label_id(audio, label, self.commands),
                     num_parallel_calls=AUTOTUNE
                 )
 
             datasets.append(spectrogram_ds)
-              
+
         self.train_ds = datasets[0].cache().shuffle(self.buffer_size).batch(self.batch_size).prefetch(AUTOTUNE)
         self.test_ds = datasets[1].cache().batch(self.batch_size).prefetch(AUTOTUNE)
         self.val_ds = datasets[2].cache().batch(self.batch_size).prefetch(AUTOTUNE)
