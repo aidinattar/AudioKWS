@@ -395,7 +395,13 @@ class DataVisualizer:
         """
         # Get the number of examples.
         n = rows * cols
-        _, axes = plt.subplots(rows, cols, figsize=(10, 12))
+        _, axes = plt.subplots(
+            nrows=rows,
+            ncols=cols,
+            figsize=(10, 12),
+            sharex=True,
+            sharey=True
+        )
 
         # Plot the examples.
         for i, (audio, label) in enumerate(self.waveform_ds.take(n)):
@@ -601,6 +607,36 @@ class DatasetBuilder:
         self.method = method
 
 
+    def _add_channels(
+        self,
+        data:tf.Tensor,
+        label:tf.Tensor
+    ):
+        """
+        Add a channel dimension to the data.
+        
+        Parameters
+        ----------
+        data : tf.Tensor
+            The data (either waveform or spectrogram).
+        label : tf.Tensor
+            The label.
+            
+        Returns
+        -------
+        data : tf.Tensor
+            The data with a channel dimension.
+        label : tf.Tensor
+            The label.
+        """
+        data = tf.expand_dims(
+            data,
+            axis=-1
+        )
+        
+        return data, label
+
+
     def preprocess_dataset_waveform(
         self,
         AUTOTUNE=None,
@@ -732,6 +768,12 @@ class DatasetBuilder:
                     lambda audio, label: get_spectrogram_and_label_id(audio, label, self.commands),
                     num_parallel_calls=AUTOTUNE
                 )
+                
+            # Add a channel dimension to the spectrograms.
+            spectrogram_ds = spectrogram_ds.map(
+                map_func=self._add_channels,
+                num_parallel_calls=AUTOTUNE
+            )
 
             datasets.append(spectrogram_ds)
 
