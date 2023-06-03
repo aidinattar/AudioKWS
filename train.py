@@ -28,21 +28,22 @@ Options:
 Example:
     python train.py cnn_trad_fpool3 --batch_size=64 --epochs=100 --loss=sparse_categorical_crossentropy --optimizer=Adam --metrics=accuracy
 """
-
-import pickle
+import os
 import models
 import tensorflow as tf
 from tensorflow.keras.callbacks import TensorBoard
-
-from DataSource import DataSource
+from dataset import DataLoader, DataVisualizer, DatasetBuilder
 from docopt import docopt
 
 
 def input_pipeline(path:str='DATA/speech_commands_v0.02',
+                   method_spectrum:str='log_mel',
                    test_ratio:float=0.15,
                    val_ratio:float=0.05,
                    batch_size:int=64,
                    shuffle_buffer_size:int=1000,
+                   shuffle:bool=True,
+                   seed:int=42,
                    verbose:int=1):
     """
     Get the data.
@@ -51,6 +52,8 @@ def input_pipeline(path:str='DATA/speech_commands_v0.02',
     ----------
     path : str
         Path to the data.
+    method_spectrum : str
+        Method to compute the spectrum.
     test_ratio : float
         Ratio of the data to be used as test set.
     val_ratio : float
@@ -59,54 +62,92 @@ def input_pipeline(path:str='DATA/speech_commands_v0.02',
         Batch size.
     shuffle_buffer_size : int
         Shuffle buffer size.
+    shuffle : bool
+        Whether to shuffle the data.
+    seed : int
+        Seed for the random number generator.
     verbose : int
         Verbosity level.
         
     Returns
     -------
-    data_source : DataSource
-        Object containing the data.
+    train : tf.data.Dataset
+        Training dataset.
+    test : tf.data.Dataset
+        Test dataset.
+    val : tf.data.Dataset
+        Validation dataset.
+    commands : list
+        List of commands.
     """
 
-    # Get the data.
-    data_source = DataSource(
-        path=path,
-        batch_size=batch_size,
-        shuffle_buffer_size=shuffle_buffer_size,
-        verbose=verbose
+    # Get the files.
+    data = DataLoader(
+        path=path
     )
-    data_source.print_commands()
-
-    data_source.get_data()
-    data_source.print_example()
-    data_source.train_test_split(
+    
+    commands = data.get_commands()
+    filenames = data.get_filenames()
+    train_files, test_files, val_files = data.split_data(
+        filenames=filenames,
         test_ratio=test_ratio,
         val_ratio=val_ratio,
+        shuffle=shuffle,
+        seed=seed,
+        verbose=verbose
     )
 
-    #data_source.get_waveform_ds()
-    #data_source.get_spectrogram_ds()
-    data_source.define_ds()
-    data_source.batch_ds()
+    ds = DatasetBuilder(
+        commands=commands,
+        train_filenames=train_files,
+        test_filenames=test_files,
+        val_filenames=val_files,
+        batch_size=batch_size,
+        buffer_size=shuffle_buffer_size,
+        method=method_spectrum
+    )
+    
+    train, test, val = ds.preprocess_dataset_spectrogram()
+    
+    return train, test, val, commands
 
-    return data_source
 
-def training_pipeline(name_model:str,
-                      data:DataSource,
-                      loss:str,
-                      optimizer:str,
-                      metrics:str,
-                      epochs:int=100):
+def training_pipeline(
+    name_model:str,
+    train_ds:tf.data.Dataset,
+    test_ds:tf.data.Dataset,
+    val_ds:tf.data.Dataset,
+    commands:list,
+    loss:str,
+    optimizer:str,
+    metrics:str,
+    epochs:int=100,
+    use_tensorboard:bool=True,
+    save_checkpoint:bool=True,
+    verbose:int=1,
+):
     """
     Get the model, compile it, train it and evaluate it.
     """
 
     # Get the model.
     model = getattr(models, name_model)(
-        inputs=data
+        train_ds=train_ds,
+        test_ds=test_ds,
+        val_ds=val_ds
+        commands=commands
     )
-    model.create_model()
 
+    if verbose:
+        print('Model: {}'.format(name_model))
+
+    model.create_model()
+    
+    if verbose:
+        print('Model created.')
+
+    if verbose:
+        print('Model summary:\n')
     # Print the model parameters.
     model.summary()
 
@@ -116,19 +157,28 @@ def training_pipeline(name_model:str,
         optimizer=optimizer,
         metrics=metrics
     )
+    
+    if verbose:
+        print('Model compiled.')
 
     # Define the callbacks.
-    model_tensorboad_callback = TensorBoard(log_dir="logs/{}".format(name_model))
-    model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-        filepath="checkpoints",
-        save_weights_only=False,
-        monitor='val_accuracy',
-        mode='max',
-        save_best_only=True
-    )
+    if use_tensorboard:
+        model_tensorboad_callback = TensorBoard(log_dir="logs/{}".format(name_model))
+    else:
+        model_tensorboad_callback = None
+    
+    if save_checkpoint:
+        model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+            filepath="checkpoints",
+            save_weights_only=False,
+            monitor='val_accuracy',
+            mode='max',
+            save_best_only=True
+        )
+    else:
+        model_checkpoint_callback = None
 
     # Train the model.
-    #model.fit(epochs=epochs, callbacks=[model_tensorboad_callback, model_checkpoint_callback])
     model.fit(
         epochs=epochs,
         callbacks=[
@@ -137,46 +187,118 @@ def training_pipeline(name_model:str,
         ]
     )
     
-    evals = [
+    if verbose:
+        print('Model trained.')
+
+    model.save_fit('history/{}.pkl'.format(name_model))
+    
+    if verbose:
+        print('Model saved.')
+    
+    return model
+
+
+def evaluation_pipeline(
+    model_name:str,
+    model:tf.keras.Model,
+    test_ds:tf.data.Dataset,
+    commands:list,
+    verbose:int=1,
+):
+    """
+    Evaluate the model.
+    
+    Parameters
+    ----------
+    model : tf.keras.Model
+        Trained model.
+    test_ds : tf.data.Dataset
+        Test dataset.
+    commands : list
+        List of commands.
+    verbose : int
+        Verbosity level.
+    """
+    methods = [
         'accuracy',
         'precision',
         'recall',
         'f1',
-        'confusion_matrix',
         'roc',
-        'pr'
+        'pr',
+        'confusion_matrix',
+        'classification_report'
     ]
-
-    for ev in evals:
-        model.evaluate(
-            set='val',
-            method=ev,
-        )
     
-    model.plot_model(
-        'figures/{}.png'.format(name_model),
-        show_shapes=True,
-        show_layer_names=True,
-        expand_nested=True,
-        dpi=96
+    # training history
+    model.plot_training(
+        path=os.path.join(
+            'history',
+            '{}.png'.format(model_name)
     )
+        
+    
+    # Evaluate the model.
+    for method in methods:
+        model.evaluate(
+            set=test_ds,
+            method=method
+        )
 
-    model.save_fit('history/{}.pkl'.format(name_model))
-    model.plot_training()
-    model.plot_confusion_matrix()
-    model.plot_roc_OvR()
-    model.save('models/{}.h5'.format(name_model))
 
-    return model
+def saving_pipeline(
+    model_name:str,
+    model:tf.keras.Model,
+    only_weights:bool=False,
+    path:str,
+    verbose:int=1,
+    **kwargs
+):
+    """
+    Save the model.
+    
+    Parameters
+    ----------
+    model : tf.keras.Model
+        Trained model.
+    path : str
+        Path to save the model.
+    verbose : int
+        Verbosity level.
+    """
+    if only_weights:
+        model.save_weights(
+            filepath=path,
+            **kwargs
+        )
+    else:
+        model.save_model(
+            filepath=path,
+            **kwargs
+        )
+        
+        if verbose: 
+            print('Model saved at {}'.format(path))
 
-def main(path='DATA/speech_commands_v0.02',
-         batch_size=64,
-         shuffle_buffer_size=1000,
-         name_model='cnn_trad_fpool3',
-         loss='sparse_categorical_crossentropy',
-         optimizer='Adam',
-         metrics='accuracy',
-         epochs=100):
+
+def main(
+    path='DATA/speech_commands_v0.02',
+    method_spectrum='log_mel',
+    test_ratio=0.15,
+    val_ratio=0.05,
+    batch_size=64,
+    shuffle_buffer_size=1000,
+    name_model='cnn_trad_fpool3',
+    loss='sparse_categorical_crossentropy',
+    optimizer='Adam',
+    metrics='accuracy',
+    epochs=100,
+    shuffle=True,
+    use_tensorboard:bool=True,
+    save_checkpoint:bool=True,
+    verbose=1,
+    seed=42,
+):
     """
     Main function. Get the data, train the model and evaluate it.
     
@@ -184,6 +306,12 @@ def main(path='DATA/speech_commands_v0.02',
     ----------
     path : str
         Path to the data.
+    method_spectrum : str
+        Method to compute the spectrum.
+    test_ratio : float
+        Ratio of the data to be used as test set.
+    val_ratio : float
+        Ratio of the data to be used as validation set.
     batch_size : int
         Batch size.
     shuffle_buffer_size : int
@@ -198,13 +326,60 @@ def main(path='DATA/speech_commands_v0.02',
         Metrics.
     epochs : int
         Number of epochs.
+    seed : int
+        Seed for the random number generator.
+    verbose : int
+        Verbosity level.
     """
-    data = input_pipeline(path=path, batch_size=batch_size, shuffle_buffer_size=shuffle_buffer_size)
-    model = training_pipeline(name_model=name_model, data=data, loss=loss, optimizer=optimizer, metrics=metrics, epochs=epochs)
+    train, test, val, commands = input_pipeline(
+        path=path,
+        method_spectrum=method_spectrum,
+        test_ratio=test_ratio,
+        val_ratio=val_ratio,
+        batch_size=batch_size,
+        shuffle_buffer_size=shuffle_buffer_size,
+        shuffle=shuffle,
+        seed=seed,
+        verbose=verbose
+    )
+    
+    model = training_pipeline(
+        name_model=name_model,
+        train_ds=train,
+        test_ds=test,
+        val_ds=val,
+        loss=loss,
+        optimizer=optimizer,
+        metrics=metrics,
+        epochs=100,
+        use_tensorboard=use_tensorboard,
+        save_checkpoint=save_checkpoint,
+        verbose=1,
+    )
+    
+    evaluation_pipeline(
+        model_name=name_model,
+        model=model,
+        test_ds=test,
+        commands=commands,
+        verbose=1
+    )
+
+    saving_pipeline(
+        model_name=name_model,
+        model=model,
+        only_weights=False,
+        path=os.path.join(
+            'models',
+            '{}.h5'.format(name_model)
+        ),
+        verbose=1
+    )
+
 
 if __name__ == '__main__':
 
-    args = docopt(__doc__, version='Train 0.1')
+    args = docopt(__doc__, version='Train 1.0')
 
     name_model = args['<model>']
     batch_size = int(args['--batch_size'])

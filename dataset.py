@@ -5,12 +5,15 @@ import tensorflow as tf
 import soundfile as sf
 import matplotlib.pyplot as plt
 from IPython import display
-from utils.input import get_waveform_and_label,\
-                        plot_spectrogram,\
-                        get_spectrogram,\
-                        get_spectrogram_and_label_id,\
-                        log_mel_feature_extraction
+from utils.input import get_waveform_and_label
+from utils.plot import plot_spectrogram,\
+                        plot_features
+from utils.preprocessing import get_spectrogram,\
+                               get_spectrogram_and_label_id,\
+                               get_log_mel_features_and_label_id,\
+                               get_mfcc_and_label_id
 from tqdm import tqdm
+
 
 class DataLoader:
     """
@@ -176,7 +179,7 @@ class DataLoader:
         return train_files, val_files, test_files
     
     def get_waveform_data (self,
-                            filenames: list,
+                           filenames: list,
                             ):
         """
         Get waveform dataset as numpy arrays.
@@ -207,8 +210,6 @@ class DataLoader:
         return data, labels
 
 
-    
-    
     def get_waveform_ds(self,
                         filenames: list,
                         AUTOTUNE: tf.data.experimental.AUTOTUNE = tf.data.experimental.AUTOTUNE):
@@ -279,6 +280,7 @@ class DataLoader:
     
     def get_spectrogram_logmel_ds(self,
                                   waveform_ds: tf.data.Dataset,
+                                  commands,
                                   AUTOTUNE: tf.data.experimental.AUTOTUNE = tf.data.experimental.AUTOTUNE):
         """
         Get spectrogram dataset using log mel spectrogram.
@@ -297,10 +299,40 @@ class DataLoader:
             Dataset of spectrograms.
         """
         spectrogram_ds = waveform_ds.map(
-            map_func=lambda audio, label: (log_mel_feature_extraction(audio), label),
+            map_func=lambda audio, label: get_log_mel_features_and_label_id(audio, label, commands),
             num_parallel_calls=AUTOTUNE
         )
 
+        return spectrogram_ds
+    
+    
+    def get_spectrogram_mfcc_ds(self,
+                                waveform_ds: tf.data.Dataset,
+                                commands,
+                                AUTOTUNE: tf.data.experimental.AUTOTUNE = tf.data.experimental.AUTOTUNE):
+        """
+        Get spectrogram dataset using MFCC.
+        
+        Parameters
+        ----------
+        waveform_ds : tf.data.Dataset
+            Dataset of waveforms.
+        commands : np.array
+            List of commands.
+        AUTOTUNE : tf.data.experimental.AUTOTUNE
+            Number of files to process in parallel.
+            Default: tf.data.experimental.AUTOTUNE
+            
+        Returns
+        -------
+        spectrogram_ds : tf.data.Dataset
+            Dataset of spectrograms.
+        """
+        spectrogram_ds = waveform_ds.map(
+            map_func=lambda audio, label: get_mfcc_and_label_id(audio, label, commands),
+            num_parallel_calls=AUTOTUNE
+        )
+        
         return spectrogram_ds
 
 
@@ -363,14 +395,18 @@ class DataVisualizer:
         """
         # Get the number of examples.
         n = rows * cols
-        _, axes = plt.subplots(rows, cols, figsize=(10, 12))
+        _, axes = plt.subplots(
+            nrows=rows,
+            ncols=cols,
+            figsize=(10, 12),
+            sharex=True,
+            sharey=True
+        )
 
         # Plot the examples.
         for i, (audio, label) in enumerate(self.waveform_ds.take(n)):
-            # Get the row and column.
-            r = i // cols
+            r = i // cols   
             c = i % cols
-            # Get the corresponding axis.
             ax = axes[r][c]
             ax.plot(audio.numpy())
             ax.set_yticks(np.arange(-1.2, 1.2, 0.2))
@@ -440,7 +476,7 @@ class DataVisualizer:
             print('Waveform shape:', waveform.shape)
             print('Spectrogram shape:', spectrogram.shape)
             print('Audio playback')
-            display.Audio(waveform, rate=rate)
+            display.display(display.Audio(waveform, rate=rate))
         
         if save:
             if name is None:
@@ -499,7 +535,7 @@ class DataVisualizer:
             r = i // cols
             c = i % cols
             ax = axes[r][c]
-            plot_spectrogram(spectrogram.numpy(), ax)
+            plot_features(spectrogram.numpy(), ax)
             ax.set_title(self.commands[label_id.numpy()])
             ax.axis('off')
 
@@ -520,149 +556,229 @@ class DataVisualizer:
             return plt.gcf()
 
 
-    def listen_spectrogram(self,
-                            n:int=0,
-                            rate:int=16000,
-                            return_audio:bool=False,
-                            show:bool=True,
-                            save:bool=False,
-                            dir:str='figures',
-                            name:str=None):
-        """
-        Listen to a selected spectrogram.
-
-        Parameters
-        ----------
-        n : int
-            The index of the spectrogram to listen to.
-        rate : int
-            The rate of the audio.
-        return_audio : bool
-            Whether to return the audio.
-        show : bool
-            Whether to display the audio.
-        save : bool
-            Whether to save the audio.
-        dir : str
-            The directory to save the audio.
-        name : str
-            The name of the audio file.
-            
-        Returns
-        -------
-        audio : np.array
-            The audio.
-        """
-        for spectrogram, label in self.spectrogram_ds.skip(n).take(1):
-            label = label.numpy().decode('utf-8')
-        print('Label:', label)
-        print('Spectrogram shape:', spectrogram.shape)
-        print('Audio playback')
-        
-        if show:
-            display.display(display.Audio(tf.squeeze(spectrogram).numpy()))
-        
-        if save:
-            if name is None:
-                name = f'audio_Label{label}.wav'
-            sf.write(
-                os.path.join(
-                    dir,
-                    name
-                ),
-                tf.squeeze(spectrogram).numpy(),
-                rate
-            )
-            
-        if return_audio:
-            return tf.squeeze(spectrogram).numpy(), rate
-
-
 class DatasetBuilder:
     """
     Class to build the dataset.
     """
     def __init__(self,
-                 filenames:list):
+                 commands:list,
+                 train_filenames,
+                 test_filenames,
+                 val_filenames=None,
+                 batch_size:int=64,
+                 buffer_size:int=10000,
+                 AUTOTUNE=tf.data.experimental.AUTOTUNE,
+                 method:str='log_mel',
+                 ):
         """
         Initialize the DatasetBuilder class.
 
         Parameters
         ----------
-        filenames : list
-            List of filenames.
+        train_filenames : tensorflow.python.framework.ops.EagerTensor
+            The list of training filenames.
+        test_filenames : tensorflow.python.framework.ops.EagerTensor
+            The list of testing filenames.
+        val_filenames : tensorflow.python.framework.ops.EagerTensor
+            The list of validation filenames.
+            Default is None.
+        batch_size : int
+            The batch size.
+            Default is 64.
+        buffer_size : int
+            The buffer size.
+            Default is 10000.
+        AUTOTUNE : tf.data.experimental.AUTOTUNE
+            The number of parallel calls.
+            Default is tf.data.experimental.AUTOTUNE.
+        method : str
+            The method to use for preprocessing.
+            Possible values are 'log_mel', 'mfcc' and 'STFT'.            
         """
-        self.filenames = filenames
+        self.train_filenames = train_filenames
+        self.test_filenames = test_filenames
+        self.val_filenames = val_filenames
+        self.batch_size = batch_size
+        self.buffer_size = buffer_size
+        self.AUTOTUNE = AUTOTUNE
+        self.commands = commands
 
-    def _preprocess_dataset(self,
-                            files,
-                            method:str='log_mel',
-                            AUTOTUNE=tf.data.experimental.AUTOTUNE
-                            ):
+        assert method in ['log_mel', 'mfcc', 'STFT'], 'method must be either "log_mel", "mfcc" or "STFT"'
+        self.method = method
+
+
+    def _add_channels(
+        self,
+        data:tf.Tensor,
+        label:tf.Tensor
+    ):
+        """
+        Add a channel dimension to the data.
+        
+        Parameters
+        ----------
+        data : tf.Tensor
+            The data (either waveform or spectrogram).
+        label : tf.Tensor
+            The label.
+            
+        Returns
+        -------
+        data : tf.Tensor
+            The data with a channel dimension.
+        label : tf.Tensor
+            The label.
+        """
+        data = tf.expand_dims(
+            data,
+            axis=-1
+        )
+        
+        return data, label
+
+
+    def preprocess_dataset_waveform(
+        self,
+        AUTOTUNE=None,
+        batch_size:int=None,
+    ):
+        """
+        Preprocess the dataset and create the waveform dataset.
+        
+        Parameters
+        ----------
+        AUTOTUNE : tf.data.experimental.AUTOTUNE
+            The number of parallel calls.
+            Default is tf.data.experimental.AUTOTUNE.
+        batch_size : int
+            The batch size.
+            Default is None.
+        
+        Returns
+        -------
+        train_ds : tensorflow.python.data.ops.dataset_ops.BatchDataset
+            The training dataset.
+        test_ds : tensorflow.python.data.ops.dataset_ops.BatchDataset
+            The testing dataset.
+        val_ds : tensorflow.python.data.ops.dataset_ops.BatchDataset
+            The validation dataset.
+        """
+        
+        
+        if AUTOTUNE is None:
+            AUTOTUNE = self.AUTOTUNE
+            
+        if batch_size is None:
+            batch_size = self.batch_size
+            
+        datasets = []
+
+        for files in [self.train_filenames, self.test_filenames, self.val_filenames]:
+            if files is None:
+                continue
+            files_ds = tf.data.Dataset.from_tensor_slices(files)
+            
+            # Create a dataset of the waveforms.
+            waveform_ds = files_ds.map(
+                map_func=get_waveform_and_label,
+                num_parallel_calls=AUTOTUNE
+            )
+            
+            datasets.append(waveform_ds)
+
+        self.train_ds = datasets[0].cache().shuffle(self.buffer_size).batch(self.batch_size).prefetch(AUTOTUNE)
+        self.test_ds = datasets[1].cache().batch(self.batch_size).prefetch(AUTOTUNE)
+        self.val_ds = datasets[2].cache().batch(self.batch_size).prefetch(AUTOTUNE)
+                
+        return self.train_ds, self.test_ds, self.val_ds
+
+
+    def preprocess_dataset_spectrogram(
+        self,
+        method:str=None,
+        AUTOTUNE=None,
+        batch_size:int=None,
+    ):
         """
         Preprocess the dataset.
         
         Parameters
         ----------
-        files : list
-            The list of files.
         method : str
-            The method to use for preprocessing.
-            Possible values are 'log_mel' and 'STFT'.
-            Default is 'log_mel'.
+            The method to use for preprocessing, if you want 
+            to overwrite the previous one.
+            Possible values are 'log_mel', 'mfcc' and 'STFT'.
+            Default is None.
         AUTOTUNE : tf.data.experimental.AUTOTUNE
             The number of parallel calls.
             Default is tf.data.experimental.AUTOTUNE.
-            
-        Returns
-        -------
-        output_ds : tensorflow.python.data.ops.dataset_ops.MapDataset
-            The preprocessed dataset.
-        """
-        assert method in ['log_mel', 'STFT'], 'method must be either "log_mel" or "STFT"'
-        
-        files_ds = tf.data.Dataset.from_tensor_slices(files)
-        output_ds = files_ds.map(
-            map_func=get_waveform_and_label,
-            num_parallel_calls=AUTOTUNE)
-        
-        if method=='log_mel':
-            output_ds = output_ds.map(
-                map_func=lambda audio, label: (log_mel_feature_extraction(audio), label),
-                num_parallel_calls=AUTOTUNE
-            )
-        else:
-            output_ds = output_ds.map(
-                map_func=get_spectrogram_and_label_id,
-                num_parallel_calls=AUTOTUNE
-            )
-        
-        return output_ds
-    
-    
-    def batch_dataset(self,
-                      ds,
-                      batch_size:int=32,
-                      AUTOTUNE=tf.data.experimental.AUTOTUNE):
-        """
-        Batch the dataset and prefetch it.
-        
-        Parameters
-        ----------
-        ds : tensorflow.python.data.ops.dataset_ops.MapDataset
-            The dataset to batch.
         batch_size : int
             The batch size.
-            Default is 32.
-        AUTOTUNE : tf.data.experimental.AUTOTUNE
-            The number of parallel calls.
-            Default is tf.data.experimental.AUTOTUNE.
-            
+            Default is None.
+
         Returns
         -------
-        output_ds : tensorflow.python.data.ops.dataset_ops.MapDataset
-            The batched dataset.
+        train_ds : tensorflow.python.data.ops.dataset_ops.BatchDataset
+            The training dataset.
+        test_ds : tensorflow.python.data.ops.dataset_ops.BatchDataset
+            The testing dataset.
+        val_ds : tensorflow.python.data.ops.dataset_ops.BatchDataset
+            The validation dataset.
         """
-        output_ds = ds.batch(batch_size)
-        output_ds = output_ds.cache().prefetch(AUTOTUNE)
-        return output_ds
+
+        if method is None:
+            method = self.method
+        else:
+            assert method in ['log_mel', 'mfcc', 'STFT'], 'method must be either "log_mel", "mfcc" or "STFT"'
+
+        if AUTOTUNE is None:
+            AUTOTUNE = self.AUTOTUNE
+            
+        if batch_size is None:
+            batch_size = self.batch_size
+            
+        datasets = []
+
+        for files in [self.train_filenames, self.test_filenames, self.val_filenames]:
+            if files is None:
+                continue
+            files_ds = tf.data.Dataset.from_tensor_slices(files)
+            
+            # Create a dataset of the waveforms.
+            waveform_ds = files_ds.map(
+                map_func=get_waveform_and_label,
+                num_parallel_calls=AUTOTUNE
+            )
+    
+            # Create a dataset of the spectrograms.
+            if method=='log_mel':
+                spectrogram_ds = waveform_ds.map(
+                    map_func=lambda audio, label: get_log_mel_features_and_label_id(audio, label, self.commands),
+                    num_parallel_calls=AUTOTUNE
+                )
+
+            elif method=='mfcc':
+                spectrogram_ds = waveform_ds.map(
+                    map_func=lambda audio, label: get_mfcc_and_label_id(audio, label, self.commands),
+                    num_parallel_calls=AUTOTUNE
+                )
+                
+            else:
+                spectrogram_ds = waveform_ds.map(
+                    lambda audio, label: get_spectrogram_and_label_id(audio, label, self.commands),
+                    num_parallel_calls=AUTOTUNE
+                )
+                
+            # Add a channel dimension to the spectrograms.
+            spectrogram_ds = spectrogram_ds.map(
+                map_func=self._add_channels,
+                num_parallel_calls=AUTOTUNE
+            )
+
+            datasets.append(spectrogram_ds)
+
+        self.train_ds = datasets[0].cache().shuffle(self.buffer_size).batch(self.batch_size).prefetch(AUTOTUNE)
+        self.test_ds = datasets[1].cache().batch(self.batch_size).prefetch(AUTOTUNE)
+        self.val_ds = datasets[2].cache().batch(self.batch_size).prefetch(AUTOTUNE)
+                
+        return self.train_ds, self.test_ds, self.val_ds

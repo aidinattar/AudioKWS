@@ -12,7 +12,8 @@ from utils.metric_eval import plot_roc_curve, get_all_roc_coordinates, \
 from sklearn.metrics import roc_curve, auc, precision_recall_curve
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-from tensorflow.keras.metrics import Accuracy, Precision, Recall, F1Score, AUC
+from sklearn.metrics import f1_score, recall_score, precision_score,\
+    accuracy_score, classification_report
 from sklearn.preprocessing import label_binarize
 
 class Model(object):
@@ -54,14 +55,16 @@ class Model(object):
         self.commands = commands
         
         # Get the batch size.
-        self.batch_size = train_ds.element_spec.shape[0]
+        self.batch_size = train_ds._input_dataset._batch_size.numpy()
         
         # Get the shape of the input as the dimensions of the spectrogram.
         for spectrogram, _ in train_ds.take(1):
-            self.input_shape = spectrogram.shape
+            self.input_shape = spectrogram.shape[1:]
         # Get the number of classes.
         self.num_classes = len(self.commands)
     
+        self.norm_layer = self._norm_layer()
+
 
     def _norm_layer(self):
         """
@@ -73,14 +76,14 @@ class Model(object):
             The normalization layer.
         """
         # Create a normalization layer.
-        norm_layer = tf.keras.layers.Normalization()
+        norm_layer = tf.keras.layers.Normalization(axis = None)
         # Fit the state of the layer to the spectrograms with `Normalization.adapt`.
-        return norm_layer.adapt(
-            data = train_ds.spectrogram_ds.map(
-                map_func = lambda spec,
-                label: spec
+        norm_layer.adapt(
+            data = self.train_ds.map(
+                map_func = lambda spec, label: spec
             )
         )
+        return norm_layer
 
 
     def print_input_shape(self):
@@ -149,7 +152,7 @@ class Model(object):
 
     def fit(self,
             epochs:int,
-            callbacks:list,
+            callbacks:list=None,
             verbose:int = 1,
             return_history:bool = False):
         """
@@ -161,6 +164,22 @@ class Model(object):
             The number of epochs.
         callbacks : list
             The callbacks to use.
+            Default is None.
+        verbose : int
+            The verbosity mode.
+            Default is 1.
+        return_history : bool
+            Whether to return the history.
+            
+        Returns
+        -------
+        tf.keras.callbacks.History
+            The history of the training.
+        
+        Raises
+        ------
+        Exception
+            If the model has not been compiled yet.
         """
         # Check if the model has been compiled.
         if not self.compiled:
@@ -308,7 +327,7 @@ class Model(object):
     def _accuracy(self,
                   y_true:np.ndarray,
                   y_pred:np.ndarray,
-                  **kwargs) -> float:
+                  **kwargs):
         """
         Compute the accuracy.
         
@@ -326,16 +345,18 @@ class Model(object):
         accuracy : float
             The accuracy.
         """
-        accuracy=Accuracy(**kwargs)
-        accuracy.update_state(y_true, y_pred)
-        
-        return accuracy.result().numpy()
+        return accuracy_score(
+            y_true,
+            y_pred,
+            **kwargs
+        )
 
 
     def _precision(self,
                    y_true:np.ndarray,
                    y_pred:np.ndarray,
-                   **kwargs) -> float:
+                   average:str='macro',
+                   **kwargs):
         """
         Compute the precision.
         
@@ -345,6 +366,8 @@ class Model(object):
             The true labels.
         y_pred : np.ndarray
             The predicted labels.
+        average : str
+            The averaging method.
         **kwargs : dict
             The arguments to pass to the precision object.
             
@@ -353,16 +376,19 @@ class Model(object):
         precision : float
             The precision.
         """
-        precision=Precision(**kwargs)
-        precision.update_state(y_true, y_pred)
-
-        return precision.result().numpy()
+        return precision_score(
+            y_true,
+            y_pred,
+            average=average,
+            **kwargs
+        )
 
 
     def _recall(self,
                 y_true:np.ndarray,
                 y_pred:np.ndarray,
-                **kwargs) -> float:
+                average:str='macro',
+                **kwargs):
         """
         Compute the recall.
         
@@ -372,6 +398,8 @@ class Model(object):
             The true labels.
         y_pred : np.ndarray
             The predicted labels.
+        average : str
+            The averaging method.
         **kwargs : dict
             The arguments to pass to the recall object.
             
@@ -380,16 +408,19 @@ class Model(object):
         recall : float
             The recall.
         """
-        recall=Recall(**kwargs)
-        recall.update_state(y_true, y_pred)
-        
-        return recall.result().numpy()
+        return recall_score(
+            y_true,
+            y_pred,
+            average=average,
+            **kwargs
+        )
 
 
     def _f1(self,
             y_true:np.ndarray,
             y_pred:np.ndarray,
-            **kwargs) -> float:
+            average:str='macro',
+            **kwargs):
         """
         Compute the F1 score.
         
@@ -406,11 +437,74 @@ class Model(object):
         f1 : float
             The F1 score.
         """
-        f1=F1Score(**kwargs)
-        f1.update_state(y_true, y_pred)
+        return f1_score(
+            y_true,
+            y_pred,
+            average=average,
+            **kwargs
+        )
         
-        return f1.result().numpy()
-    
+        
+    def _auc(self,
+             y_true:np.ndarray,
+             y_pred:np.ndarray,
+             **kwargs):
+        """
+        Compute the AUC.
+        
+        Parameters
+        ----------
+        y_true : np.ndarray
+            The true labels.
+        y_pred : np.ndarray
+            The predicted labels.
+        **kwargs : dict
+            The arguments to pass to the AUC object.
+        
+        Returns
+        -------
+        auc : float
+            The AUC.
+        """
+        return roc_auc_score(
+            y_true,
+            y_pred,
+            **kwargs
+        )
+        
+        
+    def _classification_report(self,
+                               y_true:np.ndarray,
+                               y_pred:np.ndarray,
+                               target_names:list=None,
+                               **kwargs):
+        """
+        Compute the classification report.
+        
+        Parameters
+        ----------
+        y_true : np.ndarray
+            The true labels.
+        y_pred : np.ndarray
+            The predicted labels.
+        target_names : list
+            The names of the classes.
+        **kwargs : dict
+            The arguments to pass to the classification report object.
+            
+        Returns
+        -------
+        classification_report : str
+            The classification report.
+        """
+        
+        return classification_report(
+            y_true,
+            y_pred,
+            target_names=target_names,
+            **kwargs
+        )
+
     
     def _confusion_matrix(self,
                           y_true:np.ndarray,
@@ -527,15 +621,16 @@ class Model(object):
 
         if display or save:
             # Plot the ROC curves for each class
-            plt.figure()
+            plt.figure(figsize=(10, 10))
             for i in range(self.num_classes):
                 plt.plot(fpr[i], tpr[i], label='Class {0} (AUC = {1:.2f})'.format(i, roc_auc[i]))
             plt.plot(fpr_micro, tpr_micro, label='Micro-average (AUC = {0:.2f})'.format(roc_auc_micro))
 
+            plt.plot([0, 1], [0, 1], 'k--')  # Plot diagonal line
             plt.xlabel('False Positive Rate')
             plt.ylabel('True Positive Rate')
             plt.title('ROC Curve - Multiclass Classification')
-            plt.legend(loc='lower right')
+            #plt.legend(loc='lower right')
             
             if display:
                 plt.show()
@@ -618,7 +713,7 @@ class Model(object):
         pr_auc_micro = auc(recall_micro, precision_micro)
         
         if display or save:
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(figsize=(10, 10)
 
             for i in range(self.num_classes):
                 ax.plot(recall[i], precision[i], label='Class {0} (AUC = {1:.2f})'.format(i, pr_auc[i]))
@@ -627,7 +722,7 @@ class Model(object):
             ax.set_xlabel('Recall')
             ax.set_ylabel('Precision')
             ax.set_title('PR Curve - Multiclass Classification')
-            ax.legend(loc='lower right')
+            #ax.legend(loc='lower right')
             
             if display:
                 plt.show()
@@ -669,8 +764,19 @@ class Model(object):
         **kwargs : dict
             The arguments to pass to the evaluation method.
         """
-        assert set in ['train', 'val', 'test'], 'Invalid set'
-        assert method in ['accuracy', 'precision', 'recall', 'f1', 'roc', 'pr', 'confusion_matrix'], 'Invalid method'
+        assert set in [
+            'train',
+            'val',
+            'test'], 'Invalid set'
+        assert method in [
+            'accuracy',
+            'precision',
+            'recall',
+            'f1',
+            'roc',
+            'pr',
+            'confusion_matrix',
+            'classification_report'], 'Invalid method'
         if not self.trained:
             raise ValueError('Model not trained')
         
@@ -681,7 +787,8 @@ class Model(object):
             'f1': self._f1,
             'roc': self._roc_curve,
             'pr': self._pr_curve,
-            'confusion_matrix': self._confusion_matrix
+            'confusion_matrix': self._confusion_matrix,
+            'classification_report': self._classification_report
         }
         
         if set == 'train':
@@ -696,7 +803,7 @@ class Model(object):
                 
             x, y_true, y_pred, y_prob = self.x_val, self.true_val, self.predictions_val, self.probabilities_val
             
-        elif set == 'test':
+        else:
             if not self.predicted_test:
                 self.predict_test()
                 
@@ -705,26 +812,87 @@ class Model(object):
         
         if method in ['accuracy', 'precision', 'recall', 'f1', 'confusion_matrix']:
             return method_dict[method](y_true, y_pred, **kwargs)
+            
+        elif method == 'classification_report':
+            return method_dict[method](y_true, y_pred, target_names=self.commands, **kwargs)
         
         else:
             return method_dict[method](y_prob, y_true, **kwargs)
 
 
-    def save(self,
-             path:str):
+    def save_model(
+        self,
+        filepath: str,
+        overwrite:bool=True,
+        save_format:str=None,
+        **kwargs
+    ):
         """
-        Save the model.
+        Save the model, weights and optimizer state.
         
         Parameters
         ----------
-        path : str
+        filepath : str
             The path to save the model.
+        overwrite : bool
+            Whether to overwrite existing models or not.
+            Default: True
+        save_format : str
+            The format to save the model.
+            Possible values: 'tf', 'h5'.
+            Default: None
+        **kwargs : dict
+            The arguments to pass to the save method.
         """
-        self.model.save(path)
+        self.model.save(
+            filepath=filepath,
+            overwrite=overwrite,
+            save_format=save_format,
+            **kwargs
+        )
 
 
-    def load(self,
-             path:str):
+    def save_weights(
+        self,
+        filepath:str,
+        overwrite:bool=True,
+        save_format:str=None,
+        options=None
+    ):
+        """
+        Save the weights of the model.
+        
+        Parameters
+        ----------
+        filepath : str
+            The path to save the weights.
+        overwrite : bool
+            Whether to overwrite existing weights or not.
+            Default: True
+        save_format : str
+            The format to save the weights.
+            Possible values: 'tf', 'h5'.
+            Default: None
+        options : tf.train.CheckpointOptions
+            The options to pass to the checkpoint.
+            Default: None
+        """
+        self.model.save_weights(
+            filepath=filepath,
+            overwrite=overwrite,
+            save_format=save_format,
+            options=options
+        )
+
+
+    def load(
+        self,
+        filepath:str,
+        custom_objects=None,
+        compile:bool=True,
+        safe_mode:bool=True,
+        **kwargs
+    ):
         """
         Load the model.
         
@@ -733,7 +901,46 @@ class Model(object):
         path : str
             The path to load the model.
         """
-        self.model=tf.keras.models.load_model(path)
+        self.model=tf.keras.models.load_model(
+            filepath=filepath,
+            custom_objects=custom_objects,
+            compile=compile,
+            safe_mode=safe_mode,
+            **kwargs
+        )
+
+
+    def load_weights(
+        self,
+        filepath:str,
+        skip_mismatch:bool=False,
+        by_name:bool=False,
+        options=None
+    ):
+        """
+        Load the weights of the model.
+        
+        Parameters
+        ----------
+        filepath : str
+            The path to load the weights.
+        skip_mismatch : bool
+            Whether to skip loading of layers where there is a mismatch in the number of weights,
+            or a mismatch in the shape of the weight (only valid when by_name=True).
+            Default: False
+        by_name : bool
+            Whether to load weights by name or by topological order.
+            Default: False
+        options : tf.train.CheckpointOptions
+            The options to pass to the checkpoint.
+            Default: None
+        """
+        self.model.load_weights(
+            filepath=filepath,
+            skip_mismatch=skip_mismatch,
+            by_name=by_name,
+            options=options
+        )
 
 
     def plot_model(self,
@@ -768,7 +975,7 @@ class Model(object):
         path : str
             The path to save the plot.
         """
-        fig, (ax1, ax2)=plt.subplots(2, 1, figsize=(10, 8))
+        fig, (ax1, ax2)=plt.subplots(2, 1, figsize=(10, 10))
 
         # Plot accuracy
         train_acc=self.history.history['accuracy']
@@ -811,7 +1018,7 @@ class Model(object):
         self.predict_val()
 
         cm=tf.math.confusion_matrix(self.y_true, self.y_pred)
-        plt.figure(figsize=(10, 12))
+        plt.figure(figsize=(10, 10))
         sns.heatmap(cm, xticklabels=self.commands, yticklabels=self.commands, annot=True, fmt='g')
         plt.xlabel('Prediction')
         plt.ylabel('Label')
