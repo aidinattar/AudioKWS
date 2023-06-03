@@ -654,7 +654,7 @@ class DatasetBuilder:
         self.test_ds = datasets[1].cache().batch(self.batch_size).prefetch(AUTOTUNE)
         self.val_ds = datasets[2].cache().batch(self.batch_size).prefetch(AUTOTUNE)
                 
-        return tuple(datasets)
+        return self.train_ds, self.test_ds, self.val_ds
 
 
     def preprocess_dataset_spectrogram(
@@ -739,4 +739,4 @@ class DatasetBuilder:
         self.test_ds = datasets[1].cache().batch(self.batch_size).prefetch(AUTOTUNE)
         self.val_ds = datasets[2].cache().batch(self.batch_size).prefetch(AUTOTUNE)
                 
-        return tuple(datasets)
+        return self.train_ds, self.test_ds, self.val_ds
