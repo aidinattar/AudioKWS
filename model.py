@@ -912,3 +912,10 @@ class Model(object):
 
         if path != None:
             plt.savefig(path)
+
+
+# print model summary
+if __name__ == '__main__':
+    model=Model()
+
+    model.model.summary()

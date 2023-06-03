@@ -8,11 +8,11 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D,\
                                     Activation, Input,\
                                     Resizing
 
-from model import model
+from model import Model
 from utils.custom_layers import LowRankDense
 
 
-class dnn_baseline(model):
+class dnn_baseline(Model):
     """
     A class to manage the model cnn-trad-fpool3 described in [Sainath15].
     """
@@ -61,7 +61,7 @@ class dnn_baseline(model):
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
 
 
-class cnn_trad_fpool3(model):
+class cnn_trad_fpool3(Model):
     """A class to manage the model cnn-trad-fpool3 described in [Sainath15]."""
     def init(self,
              inputs:DataSource):
@@ -118,7 +118,7 @@ class cnn_trad_fpool3(model):
 
 
 
-class cnn_one_fpool3(model):
+class cnn_one_fpool3(Model):
     """A class to manage the model cnn-one-fpool3 described in [Sainath15]."""
     def init(self,
              inputs:DataSource):
@@ -172,7 +172,7 @@ class cnn_one_fpool3(model):
 
 
 
-class cnn_one_fstride4(model):
+class cnn_one_fstride4(Model):
     """A class to manage the model cnn-one-fstride4 described in [Sainath15]."""
     def init(self,
              inputs:DataSource):
@@ -226,7 +226,7 @@ class cnn_one_fstride4(model):
 
 
 
-class cnn_one_fstride8(model):
+class cnn_one_fstride8(Model):
     """A class to manage the model cnn-one-fstride4 described in [Sainath15]."""
     def init(self,
              inputs:DataSource):
@@ -280,7 +280,7 @@ class cnn_one_fstride8(model):
 
 
 
-class cnn_one_tstride2(model):
+class cnn_one_tstride2(Model):
     """A class to manage the model cnn-one-tstride2 described in [Sainath15]."""
     def init(self,
              inputs:DataSource):
@@ -341,7 +341,7 @@ class cnn_one_tstride2(model):
 
 
 
-class cnn_one_tstride4(model):
+class cnn_one_tstride4(Model):
     """A class to manage the model cnn-one-tstride4 described in [Sainath15]."""
     def init(self,
              inputs:DataSource):
@@ -402,7 +402,7 @@ class cnn_one_tstride4(model):
 
 
 
-class cnn_one_tstride8(model):
+class cnn_one_tstride8(Model):
     """A class to manage the model cnn-one-tstride8 described in [Sainath15]."""
     def init(self,
              inputs:DataSource):
@@ -463,7 +463,7 @@ class cnn_one_tstride8(model):
 
 
 
-class cnn_tpool2(model):
+class cnn_tpool2(Model):
     """A class to manage the model cnn-tpool3 described in [Sainath15]."""
     def init(self,
              inputs:DataSource):
@@ -520,7 +520,7 @@ class cnn_tpool2(model):
 
 
 
-class cnn_tpool3(model):
+class cnn_tpool3(Model):
     """A class to manage the model cnn-tpool3 described in [Sainath15]."""
     def init(self,
              inputs:DataSource):

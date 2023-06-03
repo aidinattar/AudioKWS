@@ -72,7 +72,7 @@ def input_pipeline(path:str='DATA/speech_commands_v0.02',
     data_source = DataSource(
         path=path,
         batch_size=batch_size,
-        shuffle_buffer_size=shuffle_buffer_size
+        shuffle_buffer_size=shuffle_buffer_size,
         verbose=verbose
     )
     data_source.print_commands()
@@ -156,7 +156,7 @@ def training_pipeline(name_model:str,
     model.plot_model(
         'figures/{}.png'.format(name_model),
         show_shapes=True,
-        show_layer_names=True
+        show_layer_names=True,
         expand_nested=True,
         dpi=96
     )
