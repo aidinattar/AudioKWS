@@ -14,7 +14,7 @@ import torch
 
 parser = argparse.ArgumentParser(description='Create waveform dataset')
 parser.add_argument('--create_files', action='store_true',
-                    help='create files')
+                    help='create files or simply load them', default=False)
 parser.add_argument('--noisy', action='store_true',
                     help='augment data with noise', default=False)
 parser.add_argument('--augment', action='store_true',
@@ -47,6 +47,9 @@ if __name__ == '__main__':
         X_train = torch.load('waveform_ds/X_train.pt')
         X_val = torch.load('waveform_ds/X_val.pt')
         X_test = torch.load('waveform_ds/X_test.pt')
+        y_train = np.loadtxt('waveform_ds/y_train.txt', dtype=str)
+        y_val = np.loadtxt('waveform_ds/y_val.txt', dtype=str)
+        y_test = np.loadtxt('waveform_ds/y_test.txt', dtype=str)
 
         from data_augmentation_utils import *
 

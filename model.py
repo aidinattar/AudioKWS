@@ -713,7 +713,7 @@ class Model(object):
         pr_auc_micro = auc(recall_micro, precision_micro)
         
         if display or save:
-            fig, ax = plt.subplots(figsize=(10, 10)
+            fig, ax = plt.subplots(figsize=(10, 10))
 
             for i in range(self.num_classes):
                 ax.plot(recall[i], precision[i], label='Class {0} (AUC = {1:.2f})'.format(i, pr_auc[i]))
@@ -1119,3 +1119,10 @@ class Model(object):
 
         if path != None:
             plt.savefig(path)
+
+
+# print model summary
+if __name__ == '__main__':
+    model=Model()
+
+    model.model.summary()

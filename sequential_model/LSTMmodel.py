@@ -32,7 +32,9 @@ class LSTMmodel(nn.Module):
         x = x.reshape(batch_size, seq_len, -1)
         if self.attention:
             x = self.attention_layer(x, x, x)[0]
-        # print ("input shape: ", x.shape)
+            # print ("attention shape: ", x.shape) # (batch_size, seq_len, input_size) input_size = 1
+        
+        # print ("input shape: ", x.shape) # (batch_size, seq_len, input_size) input_size = 1
         out, (ht, ct) = self.lstm(x) # ht is of shape (num_layers * num_directions, batch_size, hidden_size)
         
         # last hidden state bi-directional LSTM average
@@ -87,7 +89,7 @@ if __name__ == '__main__':
     n_classes = dataset.get_n_classes()
     print ('n_classes',n_classes)
 
-    model = LSTMmodel(hidden_size=128, num_classes=n_classes, num_layers=2)
+    model = LSTMmodel(hidden_size=128, num_classes=n_classes, num_layers=2, attention=True)
 
     for x, y in dataloader:
         out = model(x)
