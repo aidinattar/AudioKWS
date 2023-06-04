@@ -342,6 +342,10 @@ def main(
         seed=seed,
         verbose=verbose
     )
+    # img size
+    img_size = train.element_spec
+    print(img_size)
+
     
     model = training_pipeline(
         name_model=name_model,
@@ -355,6 +359,7 @@ def main(
         use_tensorboard=use_tensorboard,
         save_checkpoint=save_checkpoint,
         verbose=1,
+        commands=commands,
     )
     
     evaluation_pipeline(

@@ -40,36 +40,43 @@ class CNNModel(nn.Module):
     """
 
     def __init__(self, 
-                 in_channels: int, 
                  n_classes: int = 1
                  ):
         super().__init__()
-
+        in_channels = 1
         self.conv1 = ConvBlock(in_channels, 128, 64, 1)
+
         self.conv2 = ConvBlock(128, 128, 16, 1)
         self.conv3 = ConvBlock(128, 128, 4, 1)
-        self.final = nn.Linear(128, n_classes)
+        # flatten 
+        x = torch.randn(1, 1, 15000)
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+
+        self.linear = nn.Linear(128, n_classes)
 
     def forward(self, x):
         # add channel dimension
         x = x.unsqueeze(1)
         x = self.conv1(x)
+        # print (x.shape)
         x = self.conv2(x)
+        # print (x.shape)
         x = self.conv3(x)
-        return self.final(x.mean(dim=-1))
+        # flatten 
+        return self.linear(torch.mean(x, dim=1))
 
 
 class CNNModelMetaData():
 
     def __init__(self, 
-                 in_channels: int, 
                  n_classes: int = 1
                  ):
-        self.in_channels = in_channels
         self.n_classes = n_classes
 
     def __str__(self):
-        return dict(in_channels=self.in_channels,
+        return dict(
                     n_classes=self.n_classes).__str__()
     
     def save(self, path):

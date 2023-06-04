@@ -61,16 +61,16 @@ import argparse
 
 parser = argparse.ArgumentParser(description='training')
 parser.add_argument('--main_path', type=str, default='waveform_ds', help='main path to the dataset')
-parser.add_argument('--epochs', type=int, default=30, help='number of epochs to train (default: 10)')
-parser.add_argument('--lr', type=float, default=5e-4, help='learning rate ')
+parser.add_argument('--epochs', type=int, default=200, help='number of epochs to train (default: 10)')
+parser.add_argument('--lr', type=float, default=1e-3, help='learning rate ')
 parser.add_argument('--dropout', type=float, default=0.4, help='dropout rate')
-parser.add_argument('--batch_size', type=int, default=128, help='batch size (default: 256)')
+parser.add_argument('--batch_size', type=int, default=256, help='batch size (default: 256)')
 parser.add_argument('--load_pretrained', type=bool, default=False, help='whether to load pretrained model')
-parser.add_argument('--save_dir', type=str, default='checkpoints_no_attention', help='directory to save checkpoints')
+parser.add_argument('--save_dir', type=str, default='checkpoints_2', help='directory to save checkpoints')
 parser.add_argument('--attention', type=bool, default=False, help='whether to use attention')
 parser.add_argument('--bidirectional', type=bool, default=False, help='whether to use bidirectional LSTM')
 parser.add_argument('--seed', type=int, default=1, help='random seed (default: 1)')
-parser.add_argument('--model', type=str, default='LSTM', help='model to use (default: LSTM)', choices=['LSTM', 'CNN'])
+parser.add_argument('--model', type=str, default='CNN', help='model to use (default: LSTM)', choices=['LSTM', 'CNN', 'HF'])
 
 args = parser.parse_args()
 
@@ -105,6 +105,7 @@ def main(
 
     nlabels = train_dataset.get_n_classes()
     idx2label = train_dataset.get_idx2label()
+    label2idx = {label:idx for idx, label in idx2label.items()}
 
     # save to file get_idx2label
     with open(os.path.join(save_dir, 'idx2label.txt'), 'w') as f:
@@ -132,13 +133,59 @@ def main(
     elif model == 'CNN':
         from CNNmodel import CNNModel, CNNModelMetaData
         model = CNNModel(
-                        in_channels=1, 
                         n_classes=nlabels,
                         )
         meta = CNNModelMetaData(
-                        in_channels=1,
                         n_classes=nlabels,
                         )
+    elif model == 'HF':
+        from transformers import AutoModelForAudioClassification, TrainingArguments, Trainer
+        num_labels = nlabels
+        model = AutoModelForAudioClassification.from_pretrained(
+            "facebook/wav2vec2-base-960h",
+        
+            num_labels=num_labels,
+            label2id=label2idx,
+            id2label=idx2label,
+        )
+
+        args = TrainingArguments(
+            f"finetuned-ks",
+            evaluation_strategy = "epoch",
+            save_strategy = "epoch",
+            learning_rate=3e-5,
+            per_device_train_batch_size=batch_size,
+            gradient_accumulation_steps=4,
+            per_device_eval_batch_size=batch_size,
+            num_train_epochs=5,
+            warmup_ratio=0.1,
+            logging_steps=10,
+            load_best_model_at_end=True,
+            metric_for_best_model="accuracy",
+            push_to_hub=True,
+        )
+
+        import numpy as np
+
+        def compute_metrics(eval_pred):
+            """Computes accuracy on a batch of predictions"""
+            from datasets import load_dataset, load_metric
+            metric = load_metric("accuracy")
+            predictions = np.argmax(eval_pred.predictions, axis=1)
+            return metric.compute(predictions=predictions, references=eval_pred.label_ids)
+        from transformers import AutoFeatureExtractor
+        feature_extractor = AutoFeatureExtractor.from_pretrained("facebook/wav2vec2-base")
+        trainer = Trainer(
+            model,
+            args,
+            train_dataset=train_dataset,
+            eval_dataset=val_dataset,
+            tokenizer=feature_extractor,
+            compute_metrics=compute_metrics
+        )
+        trainer.train()
+        return 
+
 
     meta.save(os.path.join(save_dir, 'model_meta.json'))
 
@@ -206,3 +253,6 @@ if __name__ == '__main__':
         **vars(args)
         )
     
+
+
+

@@ -410,7 +410,7 @@ class CNNOneTStride2(Model):
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
 
 
-class ,(Model):
+class CNNOneTStride4(Model):
     """A class to manage the model cnn-one-tstride4 described in [Sainath15]."""
     def init(self,
              train_ds,
