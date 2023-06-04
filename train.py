@@ -169,7 +169,7 @@ def training_pipeline(
     
     if save_checkpoint:
         model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-            filepath="checkpoints",
+            filepath="checkpoints_{}".format(name_model),
             save_weights_only=False,
             monitor='val_accuracy',
             mode='max',

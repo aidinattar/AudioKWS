@@ -692,3 +692,11 @@ class CNNTPool3(Model):
 
         # Create a model with the specified inputs and outputs
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
+
+if __name__ == '__main__':
+    # test the model
+    from tensorflow.keras.utils import plot_model
+    from tensorflow.keras.optimizers import Adam
+
+
+
