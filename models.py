@@ -6,6 +6,21 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D,\
 from model import Model
 from utils.custom_layers import LowRankDense
 
+"""
+
+model options:
+
+DNNBaseline
+CNNTradFPool3
+CNNOneFPool3
+CNNOneFStride4
+CNNOneFStride8
+CNNOneTStride2
+CNNOneTStride4
+CNNOneTStride8
+CNNTPool2
+CNNTPool3
+"""
 
 class DNNBaseline(Model):
     """
@@ -173,7 +188,6 @@ class CNNOneFPool3(Model):
 
         # Create an input layer with the specified input shape
         input = Input(self.input_shape)
-
         # Downsample the input spectrogram to 32x32
         x = Resizing(32, 32)(input)
 
@@ -692,6 +706,60 @@ class CNNTPool3(Model):
 
         # Create a model with the specified inputs and outputs
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
+
+
+from ViT import VisionTransformer
+class vision_transformer(Model):
+
+    def init(self,
+             train_ds,
+             val_ds,
+             test_ds,
+             commands,
+             ):
+        """
+        Initialize the class.
+        
+        Parameters
+        ----------
+        train_ds : tf.data.Dataset
+            A dataset of training data.
+        val_ds : tf.data.Dataset
+            A dataset of validation data.
+        test_ds : tf.data.Dataset
+            A dataset of test data.
+        commands : list
+            A list of commands.
+        """
+        super().__init__(
+            train_ds=train_ds,
+            val_ds=val_ds,
+            test_ds=test_ds,
+            commands=commands
+        )
+
+    def define_model(self):
+        self.vit = VisionTransformer(
+                                    image_size = 32,
+                                    patch_size = 4,
+                                    num_layers = 4,
+                                    num_classes = 35,
+                                    d_model = 64,
+                                    num_heads = 4,
+                                    mlp_dim = 64,
+                                    channels=1,
+                                    dropout=0.1,
+                                    )
+
+        input = Input(self.input_shape)
+        x = Resizing(32, 32)(input)
+        print (input.shape)
+        outputs = self.vit(x)
+        
+        self.model = tf.keras.Model(inputs=input, outputs=outputs)
+        
+
+
 
 if __name__ == '__main__':
     # test the model
