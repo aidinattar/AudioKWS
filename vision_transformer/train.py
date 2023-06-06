@@ -2,7 +2,6 @@ import os
 from argparse import ArgumentParser
 
 import tensorflow as tf
-import tensorflow_addons as tfa
 from tensorflow.keras.callbacks import TensorBoard
 
 from ViT import VisionTransformer
@@ -145,9 +144,11 @@ if __name__ == "__main__":
             loss=tf.keras.losses.SparseCategoricalCrossentropy(
                 from_logits=True
             ),
-            optimizer=tfa.optimizers.AdamW(
-                learning_rate=args.lr, weight_decay=args.weight_decay
+            optimizer=tf.keras.optimizers.Adam(
+                learning_rate=args.lr,
+                weight_decay=args.weight_decay,
             ),
+
             metrics=["accuracy"],
         )
 

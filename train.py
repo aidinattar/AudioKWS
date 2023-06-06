@@ -13,7 +13,7 @@ and loss are plotted using matplotlib.
 
 
 Usage:
-    train.py <model> [--batch_size=<batch_size>] [--epochs=<epochs>] [--loss=<loss>] [--optimizer=<optimizer>] [--metrics=<metrics>]
+    train.py <model> [--batch_size=<batch_size>] [--epochs=<epochs>] [--loss=<loss>] [--lr=<lr>] [--metrics=<metrics>]
     train.py (-h | --help)
     train.py --version
 
@@ -22,11 +22,11 @@ Options:
     --batch_size=<batch_size>   Batch size [default: 64].
     --epochs=<epochs>           Number of epochs [default: 100]
     --loss=<loss>               Loss function [default: sparse_categorical_crossentropy]
-    --optimizer=<optimizer>     Optimizer [default: Adam]
+    --lr=<lr>                   learing rate [default: 0.001]
     --metrics=<metrics>         Metrics [default: accuracy].
 
 Example:
-    python train.py cnn_trad_fpool3 --batch_size=64 --epochs=100 --loss=sparse_categorical_crossentropy --optimizer=Adam --metrics=accuracy
+    python train.py cnn_trad_fpool3 --batch_size=64 --epochs=100 --loss=sparse_categorical_crossentropy --lr=0.001 --metrics=accuracy
 """
 import os
 import models
@@ -178,12 +178,21 @@ def training_pipeline(
     else:
         model_checkpoint_callback = None
 
+    # use EarlyStopping to stop training early if validation loss is not improving
+    early_stopping = tf.keras.callbacks.EarlyStopping(
+        monitor='val_accuracy',
+        mode='max',
+        patience=5,
+        restore_best_weights=True
+    )
+
     # Train the model.
     model.fit(
         epochs=epochs,
         callbacks=[
             model_tensorboad_callback,
-            model_checkpoint_callback
+            model_checkpoint_callback,
+            early_stopping
         ]
     )
     
@@ -286,11 +295,11 @@ def main(
     method_spectrum='log_mel',
     test_ratio=0.15,
     val_ratio=0.05,
-    batch_size=64,
+    batch_size=128,
     shuffle_buffer_size=1000,
     name_model='cnn_trad_fpool3',
     loss='sparse_categorical_crossentropy',
-    optimizer='Adam',
+    lr=0.001,
     metrics='accuracy',
     epochs=100,
     shuffle=True,
@@ -331,6 +340,8 @@ def main(
     verbose : int
         Verbosity level.
     """
+    optimizer = tf.keras.optimizers.Adam(learning_rate=float(lr), weight_decay=1e-5)
+
     train, test, val, commands = input_pipeline(
         path=path,
         method_spectrum=method_spectrum,
@@ -390,7 +401,7 @@ if __name__ == '__main__':
     batch_size = int(args['--batch_size'])
     epochs = int(args['--epochs'])
     loss = args['--loss']
-    optimizer = args['--optimizer']
+    lr = args['--lr']
     metrics = args['--metrics']
 
     main(
@@ -399,7 +410,7 @@ if __name__ == '__main__':
         shuffle_buffer_size=1000,
         name_model=name_model,
         loss=loss,
-        optimizer=optimizer,
+        lr=lr,
         metrics=metrics,
         epochs=epochs
     )

@@ -72,7 +72,7 @@ class TransformerBlock(tf.keras.layers.Layer):
         self.dropout1 = Dropout(dropout)
         self.dropout2 = Dropout(dropout)
 
-    def call(self, inputs, training):
+    def call(self, inputs, training=True):
         inputs_norm = self.layernorm1(inputs)
         attn_output = self.att(inputs_norm)
         attn_output = self.dropout1(attn_output, training=training)
@@ -137,12 +137,11 @@ class VisionTransformer(tf.keras.Model):
         patches = tf.reshape(patches, [batch_size, -1, self.patch_dim])
         return patches
 
-    def call(self, x, training):
+    def call(self, x, training=True):
         batch_size = tf.shape(x)[0]
         # resize to image_size
         print ("image_size", self.image_size)
-        print ("x", x.shape)
-        x = tf.image.resize(x, (batch_size, self.image_size, self.image_size))
+        # x = tf.image.resize(x, (batch_size, self.image_size, self.image_size))
 
         print ("x", x.shape)
  
