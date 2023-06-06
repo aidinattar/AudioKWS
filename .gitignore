@@ -206,5 +206,16 @@ poetry.toml
 DATA/*
 figures
 .DS_Store
+sequential_model/waveform_ds*/*.pt
+sequential_model/waveform_ds*/*.txt
 checkpoints
 checkpoints/*
+spectrogram_example.pdf
+*.v2
+checkpoints_CNNOneFPool3/variables/variables.data-00000-of-00001
+sequential_model/checkpoints_2/model_meta.json
+checkpoints_CNNOneFPool3/fingerprint.pb
+best.txt
+*.pb
+*.data-00000-of-00001
+*.index
