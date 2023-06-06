@@ -19,8 +19,8 @@ Usage:
 
 Options:
     -h --help                   Show this screen.
-    --batch_size=<batch_size>   Batch size [default: 64].
-    --epochs=<epochs>           Number of epochs [default: 100]
+    --batch_size=<batch_size>   Batch size [default: 256].
+    --epochs=<epochs>           Number of epochs [default: 300]
     --loss=<loss>               Loss function [default: sparse_categorical_crossentropy]
     --lr=<lr>                   learing rate [default: 0.001]
     --metrics=<metrics>         Metrics [default: accuracy].
@@ -121,7 +121,7 @@ def training_pipeline(
     loss:str,
     optimizer:str,
     metrics:str,
-    epochs:int=100,
+    epochs:int=300,
     use_tensorboard:bool=True,
     save_checkpoint:bool=True,
     verbose:int=1,
@@ -180,8 +180,8 @@ def training_pipeline(
 
     # use EarlyStopping to stop training early if validation loss is not improving
     early_stopping = tf.keras.callbacks.EarlyStopping(
-        monitor='val_accuracy',
-        mode='max',
+        monitor='val_loss' ,
+        mode='min',
         patience=5,
         restore_best_weights=True
     )
@@ -234,7 +234,6 @@ def evaluation_pipeline(
         'recall',
         'f1',
         'roc',
-        'pr',
         'confusion_matrix',
         'classification_report'
     ]
@@ -248,12 +247,31 @@ def evaluation_pipeline(
         
     
     # Evaluate the model.
+    metric_test = dict()
+    metric_train = dict()
     for method in methods:
-        model.evaluate(
-            set=test_ds,
-            method=method
-        )
+        mtest = model.evaluate(
+                set='test',
+                method=method,
+                model_name=model_name,
+            )
+        mtrain = model.evaluate(
+                set='train',
+                method=method,
+                model_name=model_name,
+            )
+        metric_test[method] = mtest
+        metric_train[method] = mtrain
 
+    # Save the metrics.
+    import json
+    if not os.path.exists('metrics'):
+        os.makedirs('metrics')
+    with open('metrics/{}.txt'.format(model_name), 'w') as f:
+        for key in metric_test.keys():
+            f.write('{}: {}\n'.format(key, metric_test[key]))
+
+    
 
 def saving_pipeline(
     model_name:str,
@@ -299,9 +317,9 @@ def main(
     shuffle_buffer_size=1000,
     name_model='cnn_trad_fpool3',
     loss='sparse_categorical_crossentropy',
-    lr=0.001,
+    lr=0.01,
     metrics='accuracy',
-    epochs=100,
+    epochs=300,
     shuffle=True,
     use_tensorboard:bool=True,
     save_checkpoint:bool=True,
@@ -340,6 +358,24 @@ def main(
     verbose : int
         Verbosity level.
     """
+
+    # print args
+    print('path: {}'.format(path))
+    print('method_spectrum: {}'.format(method_spectrum))
+    print('test_ratio: {}'.format(test_ratio))
+    print('val_ratio: {}'.format(val_ratio))
+    print('batch_size: {}'.format(batch_size))
+    print('shuffle_buffer_size: {}'.format(shuffle_buffer_size))
+    print('name_model: {}'.format(name_model))
+    print('loss: {}'.format(loss))
+    print('lr: {}'.format(lr))
+    print('metrics: {}'.format(metrics))
+    print('epochs: {}'.format(epochs))
+    print('shuffle: {}'.format(shuffle))
+    print('use_tensorboard: {}'.format(use_tensorboard))
+    print('save_checkpoint: {}'.format(save_checkpoint))
+
+
     optimizer = tf.keras.optimizers.Adam(learning_rate=float(lr), weight_decay=1e-5)
 
     train, test, val, commands = input_pipeline(
@@ -372,14 +408,6 @@ def main(
         verbose=1,
         commands=commands,
     )
-    
-    evaluation_pipeline(
-        model_name=name_model,
-        model=model,
-        test_ds=test,
-        commands=commands,
-        verbose=1
-    )
 
     saving_pipeline(
         model_name=name_model,
@@ -391,6 +419,16 @@ def main(
         ),
         verbose=1
     )
+    
+    evaluation_pipeline(
+        model_name=name_model,
+        model=model,
+        test_ds=test,
+        commands=commands,
+        verbose=1
+    )
+
+
 
 
 if __name__ == '__main__':
