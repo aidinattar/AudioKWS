@@ -376,7 +376,8 @@ def main(
     print('save_checkpoint: {}'.format(save_checkpoint))
 
 
-    optimizer = tf.keras.optimizers.Adam(learning_rate=float(lr), weight_decay=1e-5)
+    # optimizer = tf.keras.optimizers.Adam(learning_rate=float(lr), weight_decay=1e-5)
+    optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=float(lr), decay=1e-5)
 
     train, test, val, commands = input_pipeline(
         path=path,
