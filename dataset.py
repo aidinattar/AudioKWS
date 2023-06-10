@@ -31,7 +31,7 @@ class DataLoader:
             Path to the dataset.
         """
         self.DATASET_PATH = path
-        self.DATASET_PATH = self.DATASET_PATH if isinstance(self.DATASET_PATH, str) else self.DATASET_PATH[0]
+        print ("Dataset path: ", self.DATASET_PATH)
 
         self.data_dir = pathlib.Path(self.DATASET_PATH)
 

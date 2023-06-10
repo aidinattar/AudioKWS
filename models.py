@@ -21,6 +21,7 @@ CNNOneTStride8
 CNNTPool2
 CNNTPool3
 vision_transformer
+SpatialTransformerCNN
 """
 
 class DNNBaseline(Model):
@@ -121,7 +122,7 @@ class CNNTradFPool3(Model):
         input = Input(self.input_shape)
 
         # Downsample the input spectrogram to 32x32
-        x = Resizing(40, 40)(input)
+        x = Resizing(32, 32)(input)
 
         # Normalize the input spectrogram
         x = self.norm_layer(x)
