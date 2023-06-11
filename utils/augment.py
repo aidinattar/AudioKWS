@@ -1,7 +1,9 @@
 import tensorflow as tf
 import numpy as np
 from scipy.ndimage import affine_transform
-
+import librosa
+from tensorflow.python.ops.numpy_ops import np_config
+np_config.enable_numpy_behavior()
 
 @tf.function
 def time_mask(
@@ -26,9 +28,13 @@ def time_mask(
     tf.Tensor
         Masked spectrogram
     """
-    def apply_time_mask(spec):
+    def apply_time_mask(
+        spec,
+        num_masks=4,
+        mask_factor=4
+    ):
         masked_spec = spec.copy()
-        time_frames, _ = masked_spec.shape
+        _, time_frames, _ = masked_spec.shape
         n_masks = tf.random.uniform(
             shape=[],
             minval=1,
@@ -48,7 +54,7 @@ def time_mask(
                 maxval=mask_factor+1,
                 dtype=tf.int32
             )
-            masked_spec[t:t + t_mask, :] = 0
+            masked_spec[:, t:t + t_mask, :] = 0
         return masked_spec
 
     return tf.py_function(
@@ -59,18 +65,18 @@ def time_mask(
 
 
 @tf.function
-def doppler_mask(
+def freq_mask(
     spectrogram,
     num_masks=4,
     mask_factor=4
 ):
     """
-    Apply doppler masking to spectrogram
+    Apply freq masking to spectrogram
     
     Parameters
     ----------
     spectrogram : tf.Tensor
-        Spectrogram to apply doppler masking to
+        Spectrogram to apply freq masking to
     num_masks : int, optional
         Number of masks to apply, by default 4
     mask_factor : int, optional
@@ -81,9 +87,13 @@ def doppler_mask(
     tf.Tensor
         Masked spectrogram
     """
-    def apply_doppler_mask(spec):
+    def apply_freq_mask(
+        spec,
+        num_masks=4,
+        mask_factor=4
+    ):
         masked_spec = spec.copy()
-        _, freq_bins = masked_spec.shape
+        freq_bins, _, _ = masked_spec.shape
         n_masks = tf.random.uniform(
             shape=[],
             minval=1,
@@ -103,26 +113,31 @@ def doppler_mask(
                 maxval=mask_factor+1,
                 dtype=tf.int32
             )
-            masked_spec[:, f:f + f_mask] = 0
+            masked_spec[f:f + f_mask, :, :] = 0
         return masked_spec
 
     return tf.py_function(
-        apply_doppler_mask,
+        apply_freq_mask,
         [spectrogram],
         tf.float32
     )
 
 
 @tf.function
-def time_doppler_mask(
+def time_freq_mask(
     spectrogram,
     num_masks=8,
     time_mask_factor=4,
-    doppler_mask_factor=4
+    freq_mask_factor=4
 ):
-    def apply_time_doppler_mask(spec):
+    def apply_time_freq_mask(
+        spec,
+        num_masks=8,
+        time_mask_factor=4,
+        freq_mask_factor=4
+    ):
         masked_spec = spec.copy()
-        time_frames, freq_bins = masked_spec.shape
+        time_frames, freq_bins, _ = masked_spec.shape
         n_masks = tf.random.uniform(
             shape=[],
             minval=1,
@@ -142,23 +157,23 @@ def time_doppler_mask(
                 maxval=time_mask_factor+1,
                 dtype=tf.int32
             )
-            d = tf.random.uniform(
+            f = tf.random.uniform(
                 shape=[],
                 minval=0,
                 maxval=freq_bins,
                 dtype=tf.int32
             )
-            d_mask = tf.random.uniform(
+            f_mask = tf.random.uniform(
                 shape=[],
                 minval=1,
-                maxval=doppler_mask_factor+1,
+                maxval=freq_mask_factor+1,
                 dtype=tf.int32
             )
-            masked_spec[t:t + t_mask, d:d + d_mask] = 0
+            masked_spec[t:t + t_mask, f:f + f_mask, :] = 0
         return masked_spec
 
     return tf.py_function(
-        apply_time_doppler_mask,
+        apply_time_freq_mask,
         [spectrogram],
         tf.float32
     )
@@ -184,7 +199,10 @@ def time_warp(
     tf.Tensor
         Warped spectrogram
     """
-    def apply_time_warp(spec):
+    def apply_time_warp(
+        spec,
+        max_warping_factor:int=80
+    ):
         masked_spec = spec.copy()
         time_frames, freq_bins = masked_spec.shape
         warp_start = tf.random.uniform(
@@ -220,5 +238,75 @@ def time_warp(
     return tf.py_function(
         apply_time_warp,
         [spectrogram],
+        tf.float32
+    )
+    
+
+### Augmentations for audio data ###
+@tf.function
+def time_stretch(
+    audio,
+    rate=1.0
+):
+    """
+    Apply time stretching to audio
+    
+    Parameters
+    ----------
+    audio : tf.Tensor
+        Audio to apply time stretching to
+    rate : float, optional
+        Rate to stretch audio by, by default 1.0
+    
+    Returns
+    -------
+    tf.Tensor
+        Stretched audio
+    """
+    def apply_time_stretch(audio, rate):
+        stretched_audio = librosa.effects.time_stretch(
+            audio.numpy(),
+            rate=rate
+        )
+        return stretched_audio.astype(np.float32)
+
+    return tf.py_function(
+        apply_time_stretch,
+        [audio, rate],
+        tf.float32
+    )
+
+
+@tf.function
+def pitch_shift(
+    audio,
+    n_steps=4
+):
+    """
+    Apply pitch shifting to audio
+    
+    Parameters
+    ----------
+    audio : tf.Tensor
+        Audio to apply pitch shifting to
+    n_steps : int, optional
+        Number of steps to shift pitch by, by default 0
+    
+    Returns
+    -------
+    tf.Tensor
+        Pitch shifted audio
+    """
+    def apply_pitch_shift(audio, n_steps):
+        shifted_audio = librosa.effects.pitch_shift(
+            audio.numpy(),
+            sr=22050,
+            n_steps=n_steps
+        )
+        return shifted_audio.astype(np.float32)
+
+    return tf.py_function(
+        apply_pitch_shift,
+        [audio, n_steps],
         tf.float32
     )
