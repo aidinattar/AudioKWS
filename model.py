@@ -938,6 +938,7 @@ class Model(object):
             The options to pass to the checkpoint.
             Default: None
         """
+        self.trained =True
         self.model.load_weights(
             filepath=filepath,
             skip_mismatch=skip_mismatch,

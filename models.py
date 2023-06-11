@@ -60,7 +60,7 @@ class DNNBaseline(Model):
 
         # Create an input layer with the specified input shape
         input = Input(self.input_shape)
-
+        
         # Downsample the input spectrogram to 32x32
         x = Resizing(32, 32)(input)
 
@@ -69,7 +69,7 @@ class DNNBaseline(Model):
 
         # Flatten the input spectrogram
         x = Flatten()(x)
-
+        
         # Create a fully connected layer with 128 units and a ReLU activation function
         x = Dense(units=128, activation='relu')(x)
 

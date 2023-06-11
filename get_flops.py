@@ -46,6 +46,16 @@ def input_pipeline(path:str='DATA/speech_commands_v0.02',
     
     return train, test, val, commands
 
+def get_flops(model):
+    run_meta = tf.RunMetadata()
+    opts = tf.profiler.ProfileOptionBuilder.float_operation()
+
+    # We use the Keras session graph in the call to the profiler.
+    flops = tf.profiler.profile(graph=K.get_session().graph,
+                                run_meta=run_meta, cmd='op', options=opts)
+
+    return flops.total_float_ops  # Prints the "flops" of the model.
+
 
 def flops(
     name_model:str,
@@ -70,13 +80,13 @@ def flops(
     model.create_model()
 
     # Print the model parameters.
-    # model = model.model
+    model = model.model
     print ('starting flops')
-    flops = get_flops(model, batch_size=1)/1e9
+    flops = get_flops(model, )/1e9
     return flops
 
 
-def get_flops(
+def process(
     path='DATA/speech_commands_v0.02',
     method_spectrum='mfcc',
     test_ratio=0.15,
