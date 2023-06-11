@@ -219,3 +219,7 @@ best.txt
 *.pb
 *.data-00000-of-00001
 *.index
+*.pkl
+metrics/DNNBaseline.json
+history/*.pkl
+application/static/*

@@ -59,14 +59,21 @@ class TransformerBlock(tf.keras.layers.Layer):
     def __init__(self, embed_dim, num_heads, mlp_dim, dropout=0.1):
         super(TransformerBlock, self).__init__()
         self.att = MultiHeadSelfAttention(embed_dim, num_heads)
-        self.mlp = tf.keras.Sequential(
-            [
-                Dense(mlp_dim, activation=tfa.activations.gelu),
-                Dropout(dropout),
-                Dense(embed_dim),
-                Dropout(dropout),
-            ]
-        )
+
+        # convolutional layer
+        self.conv = tf.keras.layers.Conv2D(embed_dim, 3, strides=(4,1), padding="same")
+        self.MaxPool = tf.keras.layers.MaxPool2D(pool_size=(2,2), strides=(2,2), padding="same")
+        self.conv2 = tf.keras.layers.Conv2D(embed_dim, 3, strides=(4,1), padding="same")
+        self.MaxPool2 = tf.keras.layers.MaxPool2D(pool_size=(2,2), strides=(2,2), padding="same")
+
+        # self.mlp = tf.keras.Sequential(
+        #     [
+        #         Dense(mlp_dim, activation=tfa.activations.gelu),
+        #         Dropout(dropout),
+        #         Dense(embed_dim),
+        #         Dropout(dropout),
+        #     ]
+        # )
         self.layernorm1 = LayerNormalization(epsilon=1e-6)
         self.layernorm2 = LayerNormalization(epsilon=1e-6)
         self.dropout1 = Dropout(dropout)
@@ -111,7 +118,11 @@ class VisionTransformer(tf.keras.Model):
             "pos_emb", shape=(1, num_patches + 1, d_model)
         )
         self.class_emb = self.add_weight("class_emb", shape=(1, 1, d_model))
-        self.patch_proj = Dense(d_model)
+
+        self.patch_proj = Dense(d_model) 
+        # self.patch_proj = tf.keras.layers.Conv2D(d_model, patch_size, strides=patch_size, padding="valid")
+
+
         self.enc_layers = [
             TransformerBlock(d_model, num_heads, mlp_dim, dropout)
             for _ in range(num_layers)
@@ -140,23 +151,20 @@ class VisionTransformer(tf.keras.Model):
     def call(self, x, training=True):
         batch_size = tf.shape(x)[0]
         # resize to image_size
-        print ("image_size", self.image_size)
-        # x = tf.image.resize(x, (batch_size, self.image_size, self.image_size))
-
-        print ("x", x.shape)
- 
         x = self.rescale(x)
-        print ("x", x.shape)
+        
         patches = self.extract_patches(x)
         x = self.patch_proj(patches)
 
         class_emb = tf.broadcast_to(
             self.class_emb, [batch_size, 1, self.d_model]
         )
+
         x = tf.concat([class_emb, x], axis=1)
         x = x + self.pos_emb
 
         for layer in self.enc_layers:
+            print (x.shape)
             x = layer(x, training)
 
         # First (class token) is used for classification
