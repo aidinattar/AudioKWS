@@ -536,7 +536,6 @@ class DataVisualizer:
         _, axes = plt.subplots(rows, cols, figsize=figsize)
 
         for i, (spectrogram, label_id) in enumerate(self.spectrogram_ds.take(n)):
-            print (spectrogram.numpy().shape)
             r = i // cols
             c = i % cols
             if rows>1 and cols>1:
