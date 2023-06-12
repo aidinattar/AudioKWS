@@ -2,8 +2,8 @@ import tensorflow as tf
 import numpy as np
 from scipy.ndimage import affine_transform
 import librosa
-from tensorflow.python.ops.numpy_ops import np_config
-np_config.enable_numpy_behavior()
+#from tensorflow.python.ops.numpy_ops import np_config
+#np_config.enable_numpy_behavior()
 
 @tf.function
 def time_mask(
@@ -57,7 +57,7 @@ def time_mask(
             masked_spec[:, t:t + t_mask, :] = 0
         return masked_spec
 
-    return tf.py_function(
+    return tf.numpy_function(
         apply_time_mask,
         [spectrogram],
         tf.float32
@@ -116,7 +116,7 @@ def freq_mask(
             masked_spec[f:f + f_mask, :, :] = 0
         return masked_spec
 
-    return tf.py_function(
+    return tf.numpy_function(
         apply_freq_mask,
         [spectrogram],
         tf.float32
@@ -169,10 +169,10 @@ def time_freq_mask(
                 maxval=freq_mask_factor+1,
                 dtype=tf.int32
             )
-            masked_spec[t:t + t_mask, f:f + f_mask, :] = 0
+            masked_spec[f:f + f_mask, t:t + t_mask, :] = 0
         return masked_spec
 
-    return tf.py_function(
+    return tf.numpy_function(
         apply_time_freq_mask,
         [spectrogram],
         tf.float32
@@ -235,7 +235,7 @@ def time_warp(
         )
         return masked_spec
 
-    return tf.py_function(
+    return tf.numpy_function(
         apply_time_warp,
         [spectrogram],
         tf.float32
@@ -243,10 +243,10 @@ def time_warp(
     
 
 ### Augmentations for audio data ###
+time_stretch_range = (0.8, 1.2)
 @tf.function
 def time_stretch(
     audio,
-    rate=1.0
 ):
     """
     Apply time stretching to audio
@@ -265,22 +265,29 @@ def time_stretch(
     """
     def apply_time_stretch(audio, rate):
         stretched_audio = librosa.effects.time_stretch(
-            audio.numpy(),
+            audio.copy(),
             rate=rate
         )
-        return stretched_audio.astype(np.float32)
+        return stretched_audio
 
-    return tf.py_function(
+    rate = tf.random.uniform(
+        [],
+        minval=time_stretch_range[0],
+        maxval=time_stretch_range[1],
+        dtype=tf.float32
+    )
+
+    return tf.numpy_function(
         apply_time_stretch,
         [audio, rate],
         tf.float32
     )
 
 
+pitch_shift_range = (-4, 4)
 @tf.function
 def pitch_shift(
     audio,
-    n_steps=4
 ):
     """
     Apply pitch shifting to audio
@@ -299,13 +306,20 @@ def pitch_shift(
     """
     def apply_pitch_shift(audio, n_steps):
         shifted_audio = librosa.effects.pitch_shift(
-            audio.numpy(),
+            audio.copy(),
             sr=22050,
             n_steps=n_steps
         )
-        return shifted_audio.astype(np.float32)
+        return shifted_audio
 
-    return tf.py_function(
+    n_steps = tf.random.uniform(
+        [],
+        minval=pitch_shift_range[0],
+        maxval=pitch_shift_range[1],
+        dtype=tf.int32
+    )
+
+    return tf.numpy_function(
         apply_pitch_shift,
         [audio, n_steps],
         tf.float32
