@@ -510,7 +510,7 @@ class Model(object):
                           y_true:np.ndarray,
                           y_pred:np.ndarray,
                           return_cm:bool=True,
-                          display:bool=True,
+                          display:bool=False,
                           save:bool=True,
                           dir:str=None,
                           name:str=None,
@@ -746,6 +746,7 @@ class Model(object):
     def evaluate(self,
                  set:str='test',
                  method:str='roc',
+                 model_name:str=None,
                  **kwargs):
         """
         Evaluate the model, using the specified method,
@@ -790,6 +791,7 @@ class Model(object):
             'confusion_matrix': self._confusion_matrix,
             'classification_report': self._classification_report
         }
+
         
         if set == 'train':
             if not self.predicted_train:
@@ -808,7 +810,8 @@ class Model(object):
                 self.predict_test()
                 
             x, y_true, y_pred, y_prob = self.x_test, self.true_test, self.predictions_test, self.probabilities_test
-    
+
+
         
         if method in ['accuracy', 'precision', 'recall', 'f1', 'confusion_matrix']:
             return method_dict[method](y_true, y_pred, **kwargs)
@@ -1022,7 +1025,7 @@ class Model(object):
         sns.heatmap(cm, xticklabels=self.commands, yticklabels=self.commands, annot=True, fmt='g')
         plt.xlabel('Prediction')
         plt.ylabel('Label')
-        plt.show()
+        # plt.show()
 
         if path != None:
             plt.savefig(path)

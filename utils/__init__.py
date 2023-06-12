@@ -5,3 +5,4 @@ from .preprocessing import get_spectrogram, get_spectrogram_and_label_id,\
     compute_mfcc, get_mfcc_and_label_id, compute_delta, compute_mfcc_map
 from .metric_eval import calculate_tpr_fpr, get_all_roc_coordinates, plot_roc_curve
 from .plot import plot_spectrogram, plot_features
+from .augment import time_mask, freq_mask, time_freq_mask, time_warp, time_stretch, pitch_shift

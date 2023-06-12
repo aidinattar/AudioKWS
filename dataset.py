@@ -31,7 +31,7 @@ class DataLoader:
             Path to the dataset.
         """
         self.DATASET_PATH = path
-        self.DATASET_PATH = self.DATASET_PATH if isinstance(self.DATASET_PATH, str) else self.DATASET_PATH[0]
+        print ("Dataset path: ", self.DATASET_PATH)
 
         self.data_dir = pathlib.Path(self.DATASET_PATH)
 
@@ -536,7 +536,6 @@ class DataVisualizer:
         _, axes = plt.subplots(rows, cols, figsize=figsize)
 
         for i, (spectrogram, label_id) in enumerate(self.spectrogram_ds.take(n)):
-            print (spectrogram.numpy().shape)
             r = i // cols
             c = i % cols
             if rows>1 and cols>1:
