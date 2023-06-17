@@ -223,3 +223,12 @@ best.txt
 metrics/DNNBaseline.json
 history/*.pkl
 application/static/*
+application/demo_data/*/*.wav
+mfcc/*/*
+stft/*/*
+logmel/*/*
+history/*
+metrics/*.txt
+models/*.h5
+application/record.py
+confusion_matrix.pdf
