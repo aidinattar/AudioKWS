@@ -234,3 +234,7 @@ stft/*/*
 mfcc/*/*
 application/record.py
 history/*.png
+*.pkl
+confusion_matrix.pdf
+
+history/*
