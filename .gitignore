@@ -232,3 +232,17 @@ metrics/*.txt
 models/*.h5
 application/record.py
 confusion_matrix.pdf
+models/*.h5
+metrics/*.txt
+history/*.png
+history/*.pkl
+logmel/*/*
+history/*
+stft/*/*
+mfcc/*/*
+application/record.py
+history/*.png
+*.pkl
+confusion_matrix.pdf
+
+history/*
