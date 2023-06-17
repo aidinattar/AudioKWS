@@ -310,7 +310,7 @@ def saving_pipeline(
 
 def main(
     path='DATA/speech_commands_v0.02',
-    method_spectrum='mfcc',
+    method_spectrum='log_mel',
     test_ratio=0.15,
     val_ratio=0.05,
     batch_size=128,
