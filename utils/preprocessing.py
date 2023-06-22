@@ -75,7 +75,7 @@ def get_spectrogram_and_label_id(audio,
     """
     spectrogram = get_spectrogram(audio)
     # remove the last dimension
-    spectrogram = tf.squeeze(spectrogram, axis=-1)
+    # spectrogram = tf.squeeze(spectrogram, axis=-1)
      
     label_id = tf.argmax(label == commands)
     return spectrogram, label_id

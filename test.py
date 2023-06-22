@@ -115,100 +115,6 @@ def input_pipeline(path:str='DATA/speech_commands_v0.02',
     return train, test, val, commands
 
 
-def training_pipeline(
-    name_model:str,
-    train_ds:tf.data.Dataset,
-    test_ds:tf.data.Dataset,
-    val_ds:tf.data.Dataset,
-    commands:list,
-    loss:str,
-    optimizer:str,
-    metrics:str,
-    epochs:int=300,
-    use_tensorboard:bool=True,
-    save_checkpoint:bool=True,
-    verbose:int=1,
-):
-    """
-    Get the model, compile it, train it and evaluate it.
-    """
-
-    # Get the model.
-    model = getattr(models, name_model)(
-        train_ds=train_ds,
-        test_ds=test_ds,
-        val_ds=val_ds,
-        commands=commands
-    )
-
-    if verbose:
-        print('Model: {}'.format(name_model))
-
-    model.create_model()
-    
-    if verbose:
-        print('Model created.')
-
-    if verbose:
-        print('Model summary:\n')
-    # Print the model parameters.
-    model.summary()
-
-    # Compile the model.
-    model.compile(
-        loss=loss,
-        optimizer=optimizer,
-        metrics=metrics
-    )
-    
-    if verbose:
-        print('Model compiled.')
-
-    # Define the callbacks.
-    if use_tensorboard:
-        model_tensorboad_callback = TensorBoard(log_dir="logs/{}".format(name_model))
-    else:
-        model_tensorboad_callback = None
-    
-    if save_checkpoint:
-        model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-            filepath="checkpoints_{}".format(name_model),
-            save_weights_only=False,
-            monitor='val_accuracy',
-            mode='max',
-            save_best_only=True
-        )
-    else:
-        model_checkpoint_callback = None
-
-    # use EarlyStopping to stop training early if validation loss is not improving
-    early_stopping = tf.keras.callbacks.EarlyStopping(
-        monitor='val_loss' ,
-        mode='min',
-        patience=5,
-        restore_best_weights=True
-    )
-
-    # Train the model.
-    model.fit(
-        epochs=epochs,
-        callbacks=[
-            model_tensorboad_callback,
-            model_checkpoint_callback,
-            early_stopping
-        ]
-    )
-    
-    if verbose:
-        print('Model trained.')
-
-    model.save_fit('history/{}.pkl'.format(name_model))
-    
-    if verbose:
-        print('Model saved.')
-    
-    return model
-
 
 def evaluation_pipeline(
     model_name:str,
@@ -274,7 +180,40 @@ def evaluation_pipeline(
         for key in metric_test.keys():
             f.write('{}: {}\n'.format(key, metric_test[key]))
 
-    
+def load_model(
+    name_model:str,
+    train_ds:tf.data.Dataset,
+    test_ds:tf.data.Dataset,
+    val_ds:tf.data.Dataset,
+    commands:list,
+    loss:str,
+    optimizer:str,
+    metrics:str,
+    epochs:int=300,
+    use_tensorboard:bool=True,
+    save_checkpoint:bool=True,
+    verbose:int=1,
+    path:str='models'
+):
+    """
+    Get the model, compile it, train it and evaluate it.
+    """
+
+    # Get the model.
+    model = getattr(models, name_model)(
+        train_ds=train_ds,
+        test_ds=test_ds,
+        val_ds=val_ds,
+        commands=commands
+    )
+
+    if verbose:
+        print('Model: {}'.format(name_model))
+
+    model.create_model()
+    model.load(filepath=path)
+    return model
+
 
 def saving_pipeline(
     model_name:str,
@@ -309,25 +248,6 @@ def saving_pipeline(
         
         if verbose: 
             print('Model saved at {}'.format(path))
-
-def augment_data (
-        spectrogram,
-        seed:int=42,
-    ):
-    from utils.augment import time_mask, freq_mask, time_freq_mask, time_warp
-    prob = 0.5
-    tf.random.set_seed(seed)
-    if tf.random.uniform(()) > prob:
-        randint = tf.random.uniform((), minval=0, maxval=4, dtype=tf.int32)
-        if randint == 0:
-            spectrogram = time_mask(spectrogram)
-        elif randint == 1:
-            spectrogram = freq_mask(spectrogram)
-        elif randint == 2:
-            spectrogram = time_freq_mask(spectrogram)
-        elif randint == 3:
-            spectrogram = time_warp(spectrogram)
-    return spectrogram
 
 
 def main(
@@ -418,8 +338,8 @@ def main(
     img_size = train.element_spec
     print(img_size)
 
-    
-    model = training_pipeline(
+    # load model
+    model = load_model(
         name_model=name_model,
         train_ds=train,
         test_ds=test,
@@ -432,6 +352,7 @@ def main(
         save_checkpoint=save_checkpoint,
         verbose=1,
         commands=commands,
+        path = 'models/{}.h5'.format(name_model)
     )
 
     saving_pipeline(

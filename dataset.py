@@ -709,6 +709,7 @@ class DatasetBuilder:
         method:str=None,
         AUTOTUNE=None,
         batch_size:int=None,
+        augment:bool=False,
     ):
         """
         Preprocess the dataset.
@@ -736,6 +737,31 @@ class DatasetBuilder:
         val_ds : tensorflow.python.data.ops.dataset_ops.BatchDataset
             The validation dataset.
         """
+        def augment_data (
+            spectrogram,
+            seed:int=42,
+            ):
+            def _augment(
+                spectrogram,
+                seed:int=42,
+                ):
+                from utils.augment import time_mask, freq_mask, time_freq_mask, time_warp
+                prob = 0.5
+                tf.random.set_seed(seed)
+                if tf.random.uniform(()) > prob:
+                    randint = tf.random.uniform((), minval=0, maxval=3, dtype=tf.int32)
+                    if randint == 0:
+                        return time_mask(spectrogram)
+                    elif randint == 1:
+                        return freq_mask(spectrogram)
+                    elif randint == 2:
+                        return time_freq_mask(spectrogram)
+                    else:
+                        return time_warp(spectrogram)
+                else: 
+                    return spectrogram
+                            
+            return _augment(spectrogram, seed)
 
         if method is None:
             method = self.method
@@ -779,7 +805,20 @@ class DatasetBuilder:
                     lambda audio, label: get_spectrogram_and_label_id(audio, label, self.commands),
                     num_parallel_calls=AUTOTUNE
                 )
-                
+            
+            # augment the data
+            if augment:
+                print ('augmenting data')
+                # from utils.augment import time_mask, freq_mask, time_freq_mask, time_warp
+                in_shape = spectrogram_ds.take(1).as_numpy_iterator().next()[0].shape
+                spectrogram_ds = spectrogram_ds.map(
+                    map_func=lambda spectrogram, label: (augment_data(spectrogram), label),
+                )
+                # ensure the shape is the same
+                spectrogram_ds = spectrogram_ds.map(
+                    map_func=lambda spectrogram, label: (tf.ensure_shape(spectrogram, in_shape), label),
+                )
+
             # Add a channel dimension to the spectrograms.
             spectrogram_ds = spectrogram_ds.map(
                 map_func=self._add_channels,

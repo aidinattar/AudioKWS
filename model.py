@@ -66,6 +66,8 @@ class Model(object):
         self.norm_layer = self._norm_layer()
 
 
+
+
     def _norm_layer(self):
         """
         Normalization layer.
@@ -84,7 +86,7 @@ class Model(object):
             )
         )
         return norm_layer
-
+    
 
     def print_input_shape(self):
         """
@@ -887,11 +889,11 @@ class Model(object):
             options=options
         )
 
-
+    from utils.custom_layers import LowRankDense
     def load(
         self,
         filepath:str,
-        custom_objects=None,
+        custom_objects={'LowRankDense': LowRankDense},
         compile:bool=True,
         safe_mode:bool=True,
         **kwargs

@@ -28,11 +28,13 @@ def time_mask(
     tf.Tensor
         Masked spectrogram
     """
+    in_shape = spectrogram.shape
     def apply_time_mask(
         spec,
         num_masks=4,
         mask_factor=4
     ):
+        
         masked_spec = spec.copy()
         _, time_frames, _ = masked_spec.shape
         n_masks = tf.random.uniform(
@@ -55,12 +57,16 @@ def time_mask(
                 dtype=tf.int32
             )
             masked_spec[:, t:t + t_mask, :] = 0
+        shape = tf.TensorShape([in_shape[0], in_shape[1], in_shape[2]])
+        masked_spec = tf.ensure_shape(masked_spec, shape)
         return masked_spec
+    
 
     return tf.numpy_function(
         apply_time_mask,
         [spectrogram, num_masks, mask_factor],
         tf.float32
+
     )
 
 

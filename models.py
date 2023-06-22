@@ -606,15 +606,24 @@ class CNNOneTStride8(Model):
         # Create an input layer with the specified input shape
         input = Input(self.input_shape)
 
+ 
+        from tensorflow.keras.layers import Lambda
+        input = Lambda(lambda x: tf.squeeze(x, axis=-1))(input)
+        print (input.shape)
+
         # Downsample the input spectrogram to 32x32
         x = Resizing(32, 32)(input)
+        print (x.shape)
 
         # Normalize the input spectrogram
         x = self.norm_layer(x)
+        print (x.shape)
+        x = Lambda(lambda x: tf.squeeze(x, axis=0))(x)
 
         # Create a 2D Convolutional layer with 126 filters and a kernel size of 16x8
         x = Conv2D(filters=126, kernel_size=(16, 8), strides=(8, 1), activation='relu', padding='same')(x)
-
+        #squeeze
+        print (x.shape)
         # Create a Max Pooling layer with a pool size of 1x3
         x = MaxPooling2D(pool_size=(1, 3))(x)
 
