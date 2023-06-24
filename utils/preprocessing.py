@@ -140,10 +140,10 @@ def get_log_mel_features_and_label_id(audio,
     """
     log_mel_features = log_mel_feature_extraction(audio)
     label_id = tf.argmax(label == commands)
-    if augment:
-        input_shape = spectrogram.shape
-        spectrogram = augment_data(spectrogram)
-        spectrogram = tf.ensure_shape(spectrogram, input_shape)
+    # if augment:
+    #     input_shape = spectrogram.shape
+    #     spectrogram = augment_data(spectrogram)
+    #     spectrogram = tf.ensure_shape(spectrogram, input_shape)
     return log_mel_features, label_id
 
 
@@ -325,10 +325,10 @@ def get_mfcc_and_label_id(audio,
     mfcc_features = tf.transpose(compute_mfcc(log_mel_features))
     label_id = tf.argmax(label == commands)
 
-    if augment:
-        input_shape = mfcc_features.shape
-        mfcc_features = augment_data(mfcc_features)
-        mfcc_features = tf.ensure_shape(mfcc_features, input_shape)
+    # if augment:
+    #     input_shape = mfcc_features.shape
+    #     mfcc_features = augment_data(mfcc_features)
+    #     mfcc_features = tf.ensure_shape(mfcc_features, input_shape)
     return mfcc_features, label_id
 
 

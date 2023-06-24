@@ -12,10 +12,10 @@ The reference dataset used for small-footprint keyword spotting is the "Speech C
 
 The speech dataset can be downloaded from the following link: [Speech Commands Dataset](http://download.tensorflow.org/data/speech_commands_v0.02.tar.gz) (2.11 GB uncompressed)
 
-Examples of the waveforms follows:
+Examples of the spectrograms and possible data augmentation tecniques follow:
 
 <p align="center">
-<img src="sequential_model/plots/waveform_ds.png"  width="800"/> </p>
+<img src="sequential_model/plots/augment.png"  width="800"/> </p>
 
 ## Project Developments
 The project offers several possible developments and experiments, including:
@@ -25,6 +25,8 @@ The project offers several possible developments and experiments, including:
 - Implementing standard/deep CNN architectures with techniques like dropout and regularization.
 - Investigating recent/new artificial neural network (ANN) architectures, such as autoencoder-based models, attention mechanisms, and inception-based CNN networks.
 - Conducting a comparison of different architectures based on memory usage and accuracy.
+
+We implement the following pipeline:
 
 ## Useful Resources
 Recent developments and resources related to keyword spotting and speech recognition:

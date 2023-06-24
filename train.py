@@ -236,9 +236,9 @@ def evaluation_pipeline(
         'precision',
         'recall',
         'f1',
-        'roc',
-        'confusion_matrix',
-        'classification_report'
+        # 'roc',
+        # 'confusion_matrix',
+        # 'classification_report'
     ]
     
     # training history

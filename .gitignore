@@ -204,7 +204,7 @@ poetry.toml
 
 
 DATA/*
-figures
+# figures
 .DS_Store
 sequential_model/waveform_ds*/*.pt
 sequential_model/waveform_ds*/*.txt
