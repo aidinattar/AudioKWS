@@ -752,7 +752,7 @@ class DatasetBuilder:
             
         datasets = []
 
-        for files in [self.train_filenames, self.test_filenames, self.val_filenames]:
+        for i, files in enumerate([self.train_filenames, self.test_filenames, self.val_filenames]):
             if files is None:
                 continue
             files_ds = tf.data.Dataset.from_tensor_slices(files)
@@ -782,28 +782,73 @@ class DatasetBuilder:
                     num_parallel_calls=AUTOTUNE
                 )
             
-            # # augment the data
-            if augment:
+            # augment the data
+            if augment and i==0:
                 print ('augmenting data')
-                # # from utils.augment import time_mask, freq_mask, time_freq_mask, time_warp
-                
+                from utils.augment import time_mask, freq_mask, time_freq_mask, time_warp
+
+                def filter_common_elements(element, label):
+                    return tf.math.logical_not(tf.reduce_any(tf.equal(element, spectrogram_ds)))
+
+                def augment_data (
+                    spectrogram,
+                    seed:int=42,
+                    ):
+                    """
+                    Augment the data.
+
+                    Parameters
+                    ----------
+                    spectrogram : tensorflow.python.framework.ops.EagerTensor
+                        The spectrogram.
+                    seed : int
+                        The seed for the random generator.
+                        Default is 42.
+                    
+                    Returns
+                    -------
+                    spectrogram : tensorflow.python.framework.ops.EagerTensor
+                        The augmented spectrogram.
+                    """
+                    prob = 0.6
+                    tf.random.set_seed(seed)
+                    if tf.random.uniform(()) < prob:
+                        randint = tf.random.uniform((), minval=0, maxval=2, dtype=tf.int32)
+                        if randint == 0:
+                            return time_mask(spectrogram)
+                        elif randint == 1:
+                            return freq_mask(spectrogram)
+                        #elif randint == 2:
+                        else:
+                            return time_freq_mask(spectrogram)
+                        #else:
+                        #    return time_warp(spectrogram)
+                    else: 
+                        return tf.zeros_like(spectrogram)
+
+                for spectrogram, label in spectrogram_ds.take(1):
+                    in_shape = spectrogram.shape
                 # print ('in_shape', in_shape)
-                # spectrogram_ds = spectrogram_ds.map(
-                #     map_func=lambda spectrogram, label: (augment_data(spectrogram), label),
-                # )
+                augmented_ds = spectrogram_ds.map(
+                    map_func=lambda spectrogram, label: (augment_data(spectrogram), label),
+                    num_parallel_calls=tf.data.experimental.AUTOTUNE
+                )
+
+                augmented_ds = augmented_ds.filter(lambda spectrogram, _: tf.reduce_any(tf.not_equal(spectrogram, 0)))
+
+                spectrogram_ds = spectrogram_ds.concatenate(augmented_ds)
 
                 # ensure the shape is the same
-                # spectrogram_ds = spectrogram_ds.map(
-                #     map_func=lambda spectrogram, label: (tf.ensure_shape(spectrogram, in_shape), label),
-                # )
+                spectrogram_ds = spectrogram_ds.map(
+                    map_func=lambda spectrogram, label: (tf.ensure_shape(spectrogram, in_shape), label),
+                )
             
-
             # Add a channel dimension to the spectrograms.
-            # spectrogram_ds = spectrogram_ds.map(
-            #     map_func=self._add_channels,
-            #     num_parallel_calls=AUTOTUNE
-            # )
-            print ('spectrogram_ds', spectrogram_ds)
+            spectrogram_ds = spectrogram_ds.map(
+                map_func=self._add_channels,
+                num_parallel_calls=AUTOTUNE
+            )
+            #print ('spectrogram_ds', spectrogram_ds)
             datasets.append(spectrogram_ds)
 
         self.train_ds = datasets[0].cache().shuffle(self.buffer_size).batch(self.batch_size).prefetch(AUTOTUNE)

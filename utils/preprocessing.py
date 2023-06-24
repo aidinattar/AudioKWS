@@ -100,14 +100,14 @@ def get_spectrogram_and_label_id(audio,
     """
     spectrogram = get_spectrogram(audio)
     # remove the last dimension
-    # spectrogram = tf.squeeze(spectrogram, axis=-1)
+    spectrogram = tf.squeeze(spectrogram, axis=-1)
      
     label_id = tf.argmax(label == commands)
 
-    if augment:
-        input_shape = spectrogram.shape
-        spectrogram = augment_data(spectrogram)
-        spectrogram = tf.ensure_shape(spectrogram, input_shape)
+    #if augment:
+    #    input_shape = spectrogram.shape
+    #    spectrogram = augment_data(spectrogram)
+    #    spectrogram = tf.ensure_shape(spectrogram, input_shape)
 
         
     return spectrogram, label_id

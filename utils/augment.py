@@ -27,13 +27,11 @@ def time_mask(
     tf.Tensor
         Masked spectrogram
     """
-    in_shape = spectrogram.shape
     def apply_time_mask(
         spec,
         num_masks=4,
         mask_factor=4
     ):
-        
         masked_spec = spec.copy()
         _, time_frames = masked_spec.shape
         n_masks = tf.random.uniform(
@@ -55,17 +53,13 @@ def time_mask(
                 maxval=mask_factor+1,
                 dtype=tf.int32
             )
-            masked_spec[:, t:t + t_mask, :] = 0
-        shape = tf.TensorShape([in_shape[0], in_shape[1], in_shape[2]])
-        masked_spec = tf.ensure_shape(masked_spec, shape)
+            masked_spec[:, t:t + t_mask] = 0
         return masked_spec
-    
 
     return tf.numpy_function(
         apply_time_mask,
         [spectrogram, num_masks, mask_factor],
         tf.float32
-
     )
 
 
@@ -185,60 +179,32 @@ def time_freq_mask(
 
 
 @tf.function
-def time_warp(
-    spectrogram,
-    max_warping_factor:int=40
-):
-    """
-    Apply time warping to spectrogram
-
-    Parameters
-    ----------
-    spectrogram : tf.Tensor
-        Spectrogram to apply time warping to
-    max_warping_factor : int, optional
-        Maximum number of time frames to warp, by default 80
-    
-    Returns
-    -------
-    tf.Tensor
-        Warped spectrogram
-    """
+def time_warp(spectrogram, max_warping_factor=40):
     def apply_time_warp(spectrogram, max_warp_factor=50):
-        # Copy the input spectrogram to avoid modifying the original array
-        warped_spectrogram = spectrogram.copy()
+        # Create a copy of the input spectrogram tensor
+        warped_spectrogram = tf.identity(spectrogram)
         
-        freq_bins, time_frames = warped_spectrogram.shape
-        warp_factor = np.random.uniform(0, max_warp_factor)
-        start_time = np.random.randint(1, time_frames//2)
+        freq_bins, time_frames = spectrogram.shape
+        warp_factor = np.random.uniform(0.1, max_warp_factor)  # Ensure warp_factor is non-zero
+        start_time = np.random.randint(1, time_frames // 2)
         end_time = np.random.randint(start_time + 5, time_frames - 1)
 
-        
-        # Calculate the length of the time axis in the spectrogram
         num_frames = spectrogram.shape[1]
-        
-        # Calculate the number of frames in the time warp range
         warp_range = end_time - start_time + 1
-        
-        # Calculate the number of frames after warping the time range
         warped_range = int(warp_range / warp_factor)
-        
-        # Calculate the scaling factor for the time warp
         scale_factor = warp_range / warped_range
-        
-        # Calculate the new start and end time after warping
         new_start_time = int(start_time + (warp_range - warped_range) / 2)
         new_end_time = new_start_time + warped_range - 1
-        
-        # Perform the time warp
+
         for i in range(spectrogram.shape[0]):
-            warped_spectrogram[i, new_start_time:new_end_time + 1] = np.interp(
+            warped_spectrogram[i, new_start_time:new_end_time + 1] = tfp.math.interp_regular_1d_grid(
                 np.linspace(start_time, end_time, warped_range),
-                np.arange(num_frames),
+                tf.range(num_frames, dtype=tf.float32),
                 spectrogram[i]
             )
-        
+
         return warped_spectrogram
+
     return tf.numpy_function(
         apply_time_warp,
         [spectrogram, max_warping_factor],

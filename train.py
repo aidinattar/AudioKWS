@@ -416,7 +416,7 @@ def main(
     )
     # img size
     img_size = train.element_spec
-    print(img_size)
+    #print(img_size)
 
     
     model = training_pipeline(
