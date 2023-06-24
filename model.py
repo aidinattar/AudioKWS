@@ -58,8 +58,10 @@ class Model(object):
         self.batch_size = train_ds._input_dataset._batch_size.numpy()
         
         # Get the shape of the input as the dimensions of the spectrogram.
-        for spectrogram, _ in train_ds.take(1):
+        print ("input shape:", train_ds.take(1))
+        for spectrogram,_ in train_ds.take(1).as_numpy_iterator():
             self.input_shape = spectrogram.shape[1:]
+
         # Get the number of classes.
         self.num_classes = len(self.commands)
     

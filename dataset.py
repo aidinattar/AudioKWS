@@ -737,32 +737,8 @@ class DatasetBuilder:
         val_ds : tensorflow.python.data.ops.dataset_ops.BatchDataset
             The validation dataset.
         """
-        def augment_data (
-            spectrogram,
-            seed:int=42,
-            ):
-            def _augment(
-                spectrogram,
-                seed:int=42,
-                ):
-                from utils.augment import time_mask, freq_mask, time_freq_mask, time_warp
-                prob = 0.5
-                tf.random.set_seed(seed)
-                if tf.random.uniform(()) > prob:
-                    randint = tf.random.uniform((), minval=0, maxval=3, dtype=tf.int32)
-                    if randint == 0:
-                        return time_mask(spectrogram)
-                    elif randint == 1:
-                        return freq_mask(spectrogram)
-                    elif randint == 2:
-                        return time_freq_mask(spectrogram)
-                    else:
-                        return time_warp(spectrogram)
-                else: 
-                    return spectrogram
-                            
-            return _augment(spectrogram, seed)
-
+        
+                        
         if method is None:
             method = self.method
         else:
@@ -790,41 +766,44 @@ class DatasetBuilder:
             # Create a dataset of the spectrograms.
             if method=='log_mel':
                 spectrogram_ds = waveform_ds.map(
-                    map_func=lambda audio, label: get_log_mel_features_and_label_id(audio, label, self.commands),
+                    map_func=lambda audio, label: get_log_mel_features_and_label_id(audio, label, self.commands, augment=augment),
                     num_parallel_calls=AUTOTUNE
                 )
 
             elif method=='mfcc':
                 spectrogram_ds = waveform_ds.map(
-                    map_func=lambda audio, label: get_mfcc_and_label_id(audio, label, self.commands),
+                    map_func=lambda audio, label: get_mfcc_and_label_id(audio, label, self.commands, augment=augment),
                     num_parallel_calls=AUTOTUNE
                 )
                 
             else:
                 spectrogram_ds = waveform_ds.map(
-                    lambda audio, label: get_spectrogram_and_label_id(audio, label, self.commands),
+                    lambda audio, label: get_spectrogram_and_label_id(audio, label, self.commands, augment=augment),
                     num_parallel_calls=AUTOTUNE
                 )
             
-            # augment the data
+            # # augment the data
             if augment:
                 print ('augmenting data')
-                # from utils.augment import time_mask, freq_mask, time_freq_mask, time_warp
-                in_shape = spectrogram_ds.take(1).as_numpy_iterator().next()[0].shape
-                spectrogram_ds = spectrogram_ds.map(
-                    map_func=lambda spectrogram, label: (augment_data(spectrogram), label),
-                )
+                # # from utils.augment import time_mask, freq_mask, time_freq_mask, time_warp
+                
+                # print ('in_shape', in_shape)
+                # spectrogram_ds = spectrogram_ds.map(
+                #     map_func=lambda spectrogram, label: (augment_data(spectrogram), label),
+                # )
+
                 # ensure the shape is the same
-                spectrogram_ds = spectrogram_ds.map(
-                    map_func=lambda spectrogram, label: (tf.ensure_shape(spectrogram, in_shape), label),
-                )
+                # spectrogram_ds = spectrogram_ds.map(
+                #     map_func=lambda spectrogram, label: (tf.ensure_shape(spectrogram, in_shape), label),
+                # )
+            
 
             # Add a channel dimension to the spectrograms.
-            spectrogram_ds = spectrogram_ds.map(
-                map_func=self._add_channels,
-                num_parallel_calls=AUTOTUNE
-            )
-
+            # spectrogram_ds = spectrogram_ds.map(
+            #     map_func=self._add_channels,
+            #     num_parallel_calls=AUTOTUNE
+            # )
+            print ('spectrogram_ds', spectrogram_ds)
             datasets.append(spectrogram_ds)
 
         self.train_ds = datasets[0].cache().shuffle(self.buffer_size).batch(self.batch_size).prefetch(AUTOTUNE)

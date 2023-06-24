@@ -607,9 +607,9 @@ class CNNOneTStride8(Model):
         input = Input(self.input_shape)
 
  
-        from tensorflow.keras.layers import Lambda
-        input = Lambda(lambda x: tf.squeeze(x, axis=-1))(input)
-        print (input.shape)
+        # from tensorflow.keras.layers import Lambda
+        # input = Lambda(lambda x: tf.squeeze(x, axis=-1))(input)
+        # print (input.shape)
 
         # Downsample the input spectrogram to 32x32
         x = Resizing(32, 32)(input)
@@ -618,7 +618,7 @@ class CNNOneTStride8(Model):
         # Normalize the input spectrogram
         x = self.norm_layer(x)
         print (x.shape)
-        x = Lambda(lambda x: tf.squeeze(x, axis=0))(x)
+        # x = Lambda(lambda x: tf.squeeze(x, axis=0))(x)
 
         # Create a 2D Convolutional layer with 126 filters and a kernel size of 16x8
         x = Conv2D(filters=126, kernel_size=(16, 8), strides=(8, 1), activation='relu', padding='same')(x)
@@ -762,12 +762,10 @@ class CNNOneTStride8DoubleAttention(Model):
 
         # Downsample the input spectrogram to 32x32
         x = Resizing(32, 32)(input)
-        
-
+    
         # Normalize the input spectrogram
         x = self.norm_layer(x)
     
-
         # Create a 2D Convolutional layer with 126 filters and a kernel size of 16x8
         x = Conv2D(filters=126, kernel_size=(16, 8), strides=(8, 1), activation='relu', padding='same')(x)
 
@@ -1011,7 +1009,7 @@ class vision_transformer(Model):
         
         self.model = tf.keras.Model(inputs=input, outputs=outputs)
         
-
+# adpted from https://github.com/kevinzakka/spatial-transformer-network
 class SpatialTransformerCNN(Model):
     def init(self,
              train_ds,

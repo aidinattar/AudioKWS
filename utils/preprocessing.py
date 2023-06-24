@@ -2,6 +2,28 @@ import numpy as np
 import tensorflow as tf
 from scipy.fftpack import dct
 
+
+def augment_data (
+    spectrogram,
+    seed:int=42,
+    ):
+    
+    from utils.augment import time_mask, freq_mask, time_freq_mask, time_warp
+    prob = 0.4
+    tf.random.set_seed(seed)
+    if tf.random.uniform(()) < prob:
+        randint = tf.random.uniform((), minval=0, maxval=3, dtype=tf.int32)
+        if randint == 0:
+            return time_mask(spectrogram)
+        elif randint == 1:
+            return freq_mask(spectrogram)
+        elif randint == 2:
+            return time_freq_mask(spectrogram)
+        else:
+            return time_warp(spectrogram)
+    else: 
+        return spectrogram
+            
 def get_spectrogram(
     waveform: tf.Tensor,
     input_len: int = 16000,
@@ -53,7 +75,8 @@ def get_spectrogram(
 
 def get_spectrogram_and_label_id(audio,
                                  label,
-                                 commands):
+                                 commands,
+                                 augment=False):
     """
     Convert the waveform to a spectrogram via a STFT.
     
@@ -65,6 +88,8 @@ def get_spectrogram_and_label_id(audio,
         A label tensor.
     commands : np.ndarray
         A tensor of commands.
+    augment : bool, optional
+        Whether to apply data augmentation, by default False.
         
     Returns
     -------
@@ -78,12 +103,20 @@ def get_spectrogram_and_label_id(audio,
     # spectrogram = tf.squeeze(spectrogram, axis=-1)
      
     label_id = tf.argmax(label == commands)
+
+    if augment:
+        input_shape = spectrogram.shape
+        spectrogram = augment_data(spectrogram)
+        spectrogram = tf.ensure_shape(spectrogram, input_shape)
+
+        
     return spectrogram, label_id
 
 
 def get_log_mel_features_and_label_id(audio,
                                       label,
-                                      commands):
+                                      commands,
+                                      augment=False):
     """
     Convert the waveform to log mel features via a STFT.
     
@@ -95,6 +128,8 @@ def get_log_mel_features_and_label_id(audio,
         A label tensor.
     commands : np.ndarray
         A tensor of commands.
+    augment : bool, optional
+        Whether to apply data augmentation, by default False.
         
     Returns
     -------
@@ -105,6 +140,10 @@ def get_log_mel_features_and_label_id(audio,
     """
     log_mel_features = log_mel_feature_extraction(audio)
     label_id = tf.argmax(label == commands)
+    if augment:
+        input_shape = spectrogram.shape
+        spectrogram = augment_data(spectrogram)
+        spectrogram = tf.ensure_shape(spectrogram, input_shape)
     return log_mel_features, label_id
 
 
@@ -259,7 +298,8 @@ def compute_mfcc(
 
 def get_mfcc_and_label_id(audio,
                           label,
-                          commands):
+                          commands,
+                          augment=True):
     """
     Convert the waveform to MFCC features via a STFT.
 
@@ -271,6 +311,8 @@ def get_mfcc_and_label_id(audio,
         A label tensor.
     commands : np.ndarray
         A tensor of commands.
+    augment : bool, optional
+        Whether to apply data augmentation (default is True).
 
     Returns
     -------
@@ -282,6 +324,11 @@ def get_mfcc_and_label_id(audio,
     log_mel_features = tf.transpose(log_mel_feature_extraction(audio))
     mfcc_features = tf.transpose(compute_mfcc(log_mel_features))
     label_id = tf.argmax(label == commands)
+
+    if augment:
+        input_shape = mfcc_features.shape
+        mfcc_features = augment_data(mfcc_features)
+        mfcc_features = tf.ensure_shape(mfcc_features, input_shape)
     return mfcc_features, label_id
 
 
