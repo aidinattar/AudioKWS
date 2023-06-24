@@ -89,7 +89,7 @@ def input_pipeline(path:str='../DATA/speech_commands_v0.02',
     return train, test, val, commands
 
 
-def predict(N):
+def predict(N, model_name):
 
     data = DataLoader(path='demo_data')
     commands = data.get_commands()
@@ -110,14 +110,15 @@ def predict(N):
 
     imgs = []
     labels = []
+    features = 'logmel'
     for i in ds.take(N):
         img = i[0].numpy()
         label = i[1].numpy()
         imgs.append(img)
         labels.append(label)
-    model_name = 'DNNBaseline'
+    # model_name = 'CNNOneTStride8'
     train, test, val, commands = input_pipeline(path='demo_data')
-    model_path= f'../models/{model_name}.h5'
+    model_path= f'../{features}/models/{model_name}.h5'
     model = globals()[model_name](
                                 train_ds=train,
                                 test_ds=test,
@@ -150,9 +151,10 @@ def predict(N):
     
 app = Flask(__name__)
 @app.route('/<N>', methods=['GET','POST'])
-def predict_api(N):
+def predict_api(N, ):
     N = int(N)
-    dict_res = predict(N)
+    dict_res = predict(N, model_name='CNNOneTStride8')
+
     imgs = dict_res['img']
     original_label = dict_res['original_label']
     predicted_label = dict_res['predicted_label']
@@ -165,12 +167,18 @@ def predict_api(N):
         fig, ax = plt.subplots(figsize=(10, 10))
         ax.imshow(imgs[i])
         ax.set_title(f'Label: {original_label[i]}, Predicted: {predicted_label[i]}')
+
+        if not os.path.exists(f'static'):
+            os.makedirs(f'static')
         plt.savefig(f'static/{i}.png')
         matplotlib.pyplot.close()
 
     html_text = ''
     for i in range(N):
-        html_text += f'<img src="static/{i}.png" alt="img{i}" width="500" height="600">'
+        lab = original_label[i]
+        pred = predicted_label[i]
+        html_text += f'<p>Label: {lab}, Predicted: {pred}</p>'
+        html_text += f'<img src="static/{i}.png" alt="img{i}" width="200" height="100">'
     return html_text
         
         
@@ -182,6 +190,6 @@ args = parser.parse_args()
 
 if __name__ == '__main__':
     MODEL_PATH = args.model_path
-    from waitress import serve
-    serve(app, host='127.0.0.1', port=5000)
-    # app.run(host='127.0.0.1', port=5000)
+    # from waitress import serve
+    # serve(app, host='127.0.0', port=5000)
+    app.run(host='127.0.0.1', port=5000)

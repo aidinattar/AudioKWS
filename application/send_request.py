@@ -3,31 +3,40 @@ import argparse
 import json
 import pandas as pd
 import re
+import numpy as np
 
 parser = argparse.ArgumentParser(description='send request to API')
-parser.add_argument('--filename', type=str,help='filename to classify', default='nicole zattarin')
-parser.add_argument('--real_label', type=str,help='real label', default='nicole zattarin')
+parser.add_argument('--N', type=str,help='number of images to predict', default='1')
 
 args = parser.parse_args()
 
 if __name__ == '__main__':
-
-    dict_request = {'filename': args.filename, }
     host = 'http://127.0.0.1:5000/'
-    res = requests.post(host, json=dict_request)
+    endpoint = args.N
+    host = host + endpoint
+    print ("host: ", host)
+    res = requests.get(host,)
 
     # html to json
     text = res.text
-    print ("filename: ", args.filename)
-    print ("real label: ", args.real_label)
-    try:
-        text = dict(json.loads(text))
-        df = pd.DataFrame.from_dict(text, orient='index', columns=['confidence'])
-        print (df)
-    except:
-        # rmeove html tags, i.e. everything between <>
-        text = re.sub('<[^<]+?>', '', text)
-        print (text)
+    print ("n: ", args.N)
+    # remove all the html tags and img
 
-        
+    text = re.sub('<img src="static/\d+.png" alt="img\d+" width="\d+" height="\d+">', '', text)
+    labels = [i.split('Label: ')[1].split(', Predicted: ')[0].replace(' ', '') for i in text.split('<p>')[1:]]
+    preds = [i.split('Label: ')[1].split(', Predicted: ')[1].replace(' ', '').replace('</p>', '') for i in text.split('<p>')[1:]]
+
+    if args.N == '1':
+        if labels == preds: 
+            print ("Correct prediction for ", labels)
+        else:
+            print ("Incorrect prediction for ", labels)
+
+    else:
+        print ("labels: ", labels)
+        print ("preds: ", preds)
+        acc = sum(np.array(labels) == np.array(preds))/ len(labels)
+        print (f"Accuracy: over {args.N} images is {acc}")
+
+
         
