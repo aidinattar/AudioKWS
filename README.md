@@ -15,7 +15,7 @@ The speech dataset can be downloaded from the following link: [Speech Commands D
 Examples of the spectrograms and possible data augmentation tecniques follow:
 
 <p align="center">
-<img src="sequential_model/plots/augment.png"  width="800"/> </p>
+<img src="figures/augment.png"  width="800"/> </p>
 
 ## Project Developments
 The project offers several possible developments and experiments, including:
@@ -27,6 +27,21 @@ The project offers several possible developments and experiments, including:
 - Conducting a comparison of different architectures based on memory usage and accuracy.
 
 We implement the following pipeline:
+
+<p align="center">
+<img src="figures/pipe.png"  width="800"/> </p>
+
+
+## Results
+Results are shown in the two tables below:
+
+<p align="center">
+<img src="figures/res1.png"  width="800"/> </p>
+
+
+<p align="center">
+<img src="figures/res2.png"  width="800"/> </p>
+
 
 ## Useful Resources
 Recent developments and resources related to keyword spotting and speech recognition:
