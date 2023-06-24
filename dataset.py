@@ -752,7 +752,7 @@ class DatasetBuilder:
             
         datasets = []
 
-        for files in [self.train_filenames, self.test_filenames, self.val_filenames]:
+        for i, files in enumerate([self.train_filenames, self.test_filenames, self.val_filenames]):
             if files is None:
                 continue
             files_ds = tf.data.Dataset.from_tensor_slices(files)
@@ -783,9 +783,12 @@ class DatasetBuilder:
                 )
             
             # augment the data
-            if augment:
+            if augment and i==0:
                 print ('augmenting data')
                 from utils.augment import time_mask, freq_mask, time_freq_mask, time_warp
+
+                def filter_common_elements(element, label):
+                    return tf.math.logical_not(tf.reduce_any(tf.equal(element, spectrogram_ds)))
 
                 def augment_data (
                     spectrogram,
@@ -807,7 +810,7 @@ class DatasetBuilder:
                     spectrogram : tensorflow.python.framework.ops.EagerTensor
                         The augmented spectrogram.
                     """
-                    prob = 0.4
+                    prob = 0.6
                     tf.random.set_seed(seed)
                     if tf.random.uniform(()) < prob:
                         randint = tf.random.uniform((), minval=0, maxval=2, dtype=tf.int32)
@@ -821,14 +824,19 @@ class DatasetBuilder:
                         #else:
                         #    return time_warp(spectrogram)
                     else: 
-                        return spectrogram
+                        return tf.zeros_like(spectrogram)
 
                 for spectrogram, label in spectrogram_ds.take(1):
                     in_shape = spectrogram.shape
                 # print ('in_shape', in_shape)
-                spectrogram_ds = spectrogram_ds.map(
+                augmented_ds = spectrogram_ds.map(
                     map_func=lambda spectrogram, label: (augment_data(spectrogram), label),
+                    num_parallel_calls=tf.data.experimental.AUTOTUNE
                 )
+
+                augmented_ds = augmented_ds.filter(lambda spectrogram, _: tf.reduce_any(tf.not_equal(spectrogram, 0)))
+
+                spectrogram_ds = spectrogram_ds.concatenate(augmented_ds)
 
                 # ensure the shape is the same
                 spectrogram_ds = spectrogram_ds.map(
@@ -840,7 +848,7 @@ class DatasetBuilder:
                 map_func=self._add_channels,
                 num_parallel_calls=AUTOTUNE
             )
-            print ('spectrogram_ds', spectrogram_ds)
+            #print ('spectrogram_ds', spectrogram_ds)
             datasets.append(spectrogram_ds)
 
         self.train_ds = datasets[0].cache().shuffle(self.buffer_size).batch(self.batch_size).prefetch(AUTOTUNE)
