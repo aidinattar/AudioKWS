@@ -31,6 +31,10 @@ We implement the following pipeline:
 <p align="center">
 <img src="figures/pipe.png"  width="800"/> </p>
 
+## Models
+The following table shows the parameters of the main architectures used as purely CNN-based models:
+<p align="center">
+<img src="figures/models.png"  width="800"/> </p>
 
 ## Results
 Results are shown in the two tables below:
