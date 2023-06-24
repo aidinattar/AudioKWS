@@ -782,27 +782,64 @@ class DatasetBuilder:
                     num_parallel_calls=AUTOTUNE
                 )
             
-            # # augment the data
+            # augment the data
             if augment:
                 print ('augmenting data')
-                # # from utils.augment import time_mask, freq_mask, time_freq_mask, time_warp
-                
+                from utils.augment import time_mask, freq_mask, time_freq_mask, time_warp
+
+                def augment_data (
+                    spectrogram,
+                    seed:int=42,
+                    ):
+                    """
+                    Augment the data.
+
+                    Parameters
+                    ----------
+                    spectrogram : tensorflow.python.framework.ops.EagerTensor
+                        The spectrogram.
+                    seed : int
+                        The seed for the random generator.
+                        Default is 42.
+                    
+                    Returns
+                    -------
+                    spectrogram : tensorflow.python.framework.ops.EagerTensor
+                        The augmented spectrogram.
+                    """
+                    prob = 0.4
+                    tf.random.set_seed(seed)
+                    if tf.random.uniform(()) < prob:
+                        randint = tf.random.uniform((), minval=0, maxval=2, dtype=tf.int32)
+                        if randint == 0:
+                            return time_mask(spectrogram)
+                        elif randint == 1:
+                            return freq_mask(spectrogram)
+                        #elif randint == 2:
+                        else:
+                            return time_freq_mask(spectrogram)
+                        #else:
+                        #    return time_warp(spectrogram)
+                    else: 
+                        return spectrogram
+
+                for spectrogram, label in spectrogram_ds.take(1):
+                    in_shape = spectrogram.shape
                 # print ('in_shape', in_shape)
-                # spectrogram_ds = spectrogram_ds.map(
-                #     map_func=lambda spectrogram, label: (augment_data(spectrogram), label),
-                # )
+                spectrogram_ds = spectrogram_ds.map(
+                    map_func=lambda spectrogram, label: (augment_data(spectrogram), label),
+                )
 
                 # ensure the shape is the same
-                # spectrogram_ds = spectrogram_ds.map(
-                #     map_func=lambda spectrogram, label: (tf.ensure_shape(spectrogram, in_shape), label),
-                # )
+                spectrogram_ds = spectrogram_ds.map(
+                    map_func=lambda spectrogram, label: (tf.ensure_shape(spectrogram, in_shape), label),
+                )
             
-
             # Add a channel dimension to the spectrograms.
-            # spectrogram_ds = spectrogram_ds.map(
-            #     map_func=self._add_channels,
-            #     num_parallel_calls=AUTOTUNE
-            # )
+            spectrogram_ds = spectrogram_ds.map(
+                map_func=self._add_channels,
+                num_parallel_calls=AUTOTUNE
+            )
             print ('spectrogram_ds', spectrogram_ds)
             datasets.append(spectrogram_ds)
 
