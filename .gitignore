@@ -244,3 +244,4 @@ application/record.py
 history/*.png
 *.pkl
 history/*
+figures/*
